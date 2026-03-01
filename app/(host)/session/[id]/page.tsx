@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Play, Pause, SkipForward, Shuffle, Users, Wifi } from 'lucide-react';
 import { useSessionChannel, useParticipants, useActivityUpdates } from '@/lib/realtime/hooks';
 import { formatPin } from '@/lib/utils/pin';
@@ -136,6 +137,7 @@ export default function HostSessionPage({
 
 function ConfigPanel({ session }: { session: { id: string; title: string; state: string; expires_at: string } }) {
     const [closing, setClosing] = useState(false);
+    const router = useRouter();
 
     const closeSession = async () => {
         setClosing(true);
@@ -144,7 +146,12 @@ function ConfigPanel({ session }: { session: { id: string; title: string; state:
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: session.id, state: 'closed' }),
         });
-        setClosing(false);
+
+        // Wait a small bit and redirect to trigger refresh
+        setTimeout(() => {
+            router.push('/dashboard');
+            router.refresh();
+        }, 500);
     };
 
     return (

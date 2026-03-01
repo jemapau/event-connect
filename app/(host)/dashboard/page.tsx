@@ -220,11 +220,15 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000`}</pre>
                     </Link>
                 </div>
 
-                {sessions.length === 0 ? (
+                {sessions.filter(s => s.state !== 'closed').length === 0 ? (
                     <div className="neo-card p-16 text-center">
                         <Zap size={48} className="mx-auto mb-4" style={{ color: 'var(--accent-4)' }} />
-                        <p className="text-xl font-black text-[var(--text-primary)] mb-2">Sin sesiones activas</p>
-                        <p className="text-[#a0a0b0] mb-6">Crea tu primera sesión de networking</p>
+                        <p className="text-xl font-black text-[var(--text-primary)] mb-2">
+                            {sessions.length === 0 ? 'Sin sesiones activas' : 'No tienes sesiones activas'}
+                        </p>
+                        <p className="text-[#a0a0b0] mb-6">
+                            {sessions.length === 0 ? 'Crea tu primera sesión de networking' : 'Crea una nueva sesión para empezar'}
+                        </p>
                         <Link href="/create" className="neo-btn px-6 py-3 font-black text-[#0f0f0f]"
                             style={{ background: '#faff00' }}>
                             <Plus size={18} /> Crear Sesión
@@ -232,7 +236,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000`}</pre>
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {sessions.map((s) => (
+                        {sessions.filter(s => s.state !== 'closed').map((s) => (
                             <Link key={s.id} href={`/session/${s.id}`}
                                 className="neo-card p-6 flex items-center justify-between hover:translate-x-1 transition-transform group"
                                 id={`session-${s.id}`}>

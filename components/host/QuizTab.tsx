@@ -250,17 +250,49 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
                                 </button>
                             </div>
                         ) : (
-                            quizActivities.map((act, i) => (
-                                <ActivityRow
-                                    key={act.id}
-                                    activity={act}
-                                    index={i + 1}
-                                    isCurrent={currentActivity?.id === act.id}
-                                    onLaunch={() => launchActivity(act.id)}
-                                    onDelete={() => deleteActivity(act.id)}
-                                    loading={loading}
-                                />
-                            ))
+                            (() => {
+                                // Group activities by group_name, preserving global order
+                                const groups: { name: string; activities: { act: Activity; globalIndex: number }[] }[] = [];
+                                let currentGroupName: string | null = null;
+                                let currentGroupActivities: { act: Activity; globalIndex: number }[] = [];
+
+                                quizActivities.forEach((act, i) => {
+                                    const gName = (act.config as any).group_name || 'Preguntas generales';
+                                    if (gName !== currentGroupName) {
+                                        if (currentGroupActivities.length > 0) {
+                                            groups.push({ name: currentGroupName!, activities: currentGroupActivities });
+                                        }
+                                        currentGroupName = gName;
+                                        currentGroupActivities = [{ act, globalIndex: i + 1 }];
+                                    } else {
+                                        currentGroupActivities.push({ act, globalIndex: i + 1 });
+                                    }
+                                });
+                                if (currentGroupActivities.length > 0) {
+                                    groups.push({ name: currentGroupName!, activities: currentGroupActivities });
+                                }
+
+                                return groups.map((g, gi) => (
+                                    <div key={gi} className="mb-2 last:mb-0">
+                                        <div className="text-xs font-black text-[#a0a0b0] mb-2 px-1 uppercase tracking-wider">
+                                            {g.name}
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            {g.activities.map(({ act, globalIndex }) => (
+                                                <ActivityRow
+                                                    key={act.id}
+                                                    activity={act}
+                                                    index={globalIndex}
+                                                    isCurrent={currentActivity?.id === act.id}
+                                                    onLaunch={() => launchActivity(act.id)}
+                                                    onDelete={() => deleteActivity(act.id)}
+                                                    loading={loading}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ));
+                            })()
                         )}
                     </div>
 

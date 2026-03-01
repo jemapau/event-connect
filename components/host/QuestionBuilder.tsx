@@ -90,6 +90,7 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
     const [loadingDemo, setLoadingDemo] = useState(false);
     const [error, setError] = useState('');
     const [expanded, setExpanded] = useState<string | null>(drafts[0].id);
+    const [groupName, setGroupName] = useState('');
 
     const addQuestion = () => {
         const d = emptyDraft();
@@ -141,6 +142,7 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
                         options: d.options,
                         correct_index: d.correct_index,
                         time_limit_seconds: d.time_limit_seconds,
+                        group_name: groupName.trim() || undefined,
                     },
                 })),
             }),
@@ -165,7 +167,11 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 session_id: sessionId,
-                activities: DEMO_QUESTIONS.map((q, i) => ({ ...q, sort_order: i })),
+                activities: DEMO_QUESTIONS.map((q, i) => ({
+                    ...q,
+                    sort_order: i,
+                    config: { ...q.config, group_name: 'Demo Figma' }
+                })),
             }),
         });
         const data = await res.json();
@@ -206,6 +212,18 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
                         <Plus size={15} /> Nueva pregunta
                     </button>
                 </div>
+            </div>
+
+            {/* Group Name */}
+            <div className="neo-card p-4">
+                <label className="block text-xs font-black text-[#a0a0b0] mb-2">NOMBRE DEL GRUPO (Opcional)</label>
+                <input
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Ej. Ronda 1, Preguntas Difíciles..."
+                    className="neo-input text-sm"
+                />
             </div>
 
             {error && (

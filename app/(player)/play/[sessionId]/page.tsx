@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { useSessionChannel, useParticipants, useActivityUpdates, useMatchUpdates, useHostBroadcast } from '@/lib/realtime/hooks';
 import QuizOptions from '@/components/player/QuizOptions';
 import PollVote from '@/components/player/PollVote';
+import WordCloudInput from '@/components/player/WordCloudInput';
 import MatchCard from '@/components/player/MatchCard';
-import { Users, Trophy, Clock, ArrowLeft } from 'lucide-react';
+import NeobrutalistCountdown from '@/components/shared/Countdown';
+import { Users, Trophy, Clock, ArrowLeft, Medal } from 'lucide-react';
+import { PROFESSION_LABELS } from '@/lib/types';
 
 export default function PlayPage({
     params,
@@ -72,9 +75,28 @@ export default function PlayPage({
         }
     };
 
+    const handleWordsSubmit = async (words: string[]) => {
+        if (answered || !participantId || !currentActivity) return;
+        setAnswered(true);
+
+        try {
+            await fetch('/api/respond', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    activity_id: currentActivity.id,
+                    participant_id: participantId,
+                    value: { words }
+                })
+            });
+        } catch (e) {
+            console.error('Error enviando palabras', e);
+        }
+    };
+
     if (!session) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }}>
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-primary)' }} aria-live="polite" aria-busy="true">
                 <div className="text-white font-black text-xl animate-pulse">Cargando...</div>
             </div>
         );
@@ -85,15 +107,15 @@ export default function PlayPage({
             {/* Header */}
             <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
                 <div className="flex items-center gap-3">
-                    <Link href="/" className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-[var(--neo-black)] hover:bg-[var(--bg-surface)] transition-colors text-[var(--text-primary)]" title="Volver al inicio">
-                        <ArrowLeft size={16} />
+                    <Link href={`/participants/${sessionId}`} aria-label="Volver al directorio" className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-[var(--neo-black)] hover:bg-[var(--bg-surface)] transition-colors text-[var(--text-primary)]" title="Volver al directorio">
+                        <ArrowLeft size={16} aria-hidden="true" />
                     </Link>
                     <span className="font-black text-[var(--text-primary)]">
                         Event<span style={{ color: 'var(--accent-1)' }}>Connect</span>
                     </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-                    <Users size={14} />
+                <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]" aria-label={`Participantes conectados: ${participants.length}`}>
+                    <Users size={14} aria-hidden="true" />
                     <span className="font-bold text-[var(--text-primary)]">{participants.length}</span>
                 </div>
             </header>
@@ -101,9 +123,9 @@ export default function PlayPage({
             <main className="flex-1 flex flex-col px-4 py-6 max-w-sm mx-auto w-full">
                 {/* LOBBY STATE */}
                 {session.state === 'lobby' && (
-                    <div className="flex flex-col items-center justify-center flex-1 text-center gap-6">
+                    <div className="flex flex-col items-center justify-center flex-1 text-center gap-6" aria-live="polite">
                         <div className="neo-card-bright p-8 w-full">
-                            <div className="text-4xl mb-3">⏳</div>
+                            <div className="text-4xl mb-3" aria-hidden="true">⏳</div>
                             <h2 className="text-2xl font-black text-[#0f0f0f]">Sala de Espera</h2>
                             <p className="text-[#333] mt-2">El host iniciará en breve...</p>
                         </div>
@@ -125,17 +147,18 @@ export default function PlayPage({
                 {/* QUIZ STATE */}
                 {(session.state === 'question' || session.state === 'active') && currentActivity?.type === 'quiz' && (
                     <div className="flex flex-col gap-5">
-                        {/* Timer + Score */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-white font-black">
-                                <Clock size={18} style={{ color: timeLeft < 5 ? 'var(--accent-1)' : 'var(--accent-3)' }} />
-                                <span className="text-2xl" style={{ color: timeLeft < 5 ? 'var(--accent-1)' : 'var(--accent-3)' }}>
-                                    {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
-                                </span>
+                        {/* Countdown & Score Header */}
+                        <div className="flex flex-col items-center justify-between gap-4">
+                            <div className="w-full">
+                                <NeobrutalistCountdown
+                                    totalSeconds={currentActivity.config.time_limit_seconds || 30}
+                                    timeLeft={timeLeft}
+                                    label="TIEMPO RESTANTE"
+                                />
                             </div>
-                            <div className="flex items-center gap-1 text-[#a0a0b0] text-sm">
-                                <Trophy size={14} />
-                                <span className="font-bold text-white">0 pts</span>
+                            <div className="flex items-center self-end gap-1.5 px-3 py-1.5 rounded-full border-2 border-[var(--neo-black)] text-[var(--accent-3)] bg-[var(--bg-card)]" aria-label="Puntaje actual: 0 puntos">
+                                <Trophy size={14} aria-hidden="true" />
+                                <span className="font-black">0 pts</span>
                             </div>
                         </div>
 
@@ -149,8 +172,8 @@ export default function PlayPage({
 
                         {/* Options */}
                         {answered ? (
-                            <div className="neo-card p-6 text-center">
-                                <div className="text-4xl mb-2">✅</div>
+                            <div className="neo-card p-6 text-center" aria-live="polite">
+                                <div className="text-4xl mb-2" aria-hidden="true">✅</div>
                                 <p className="font-black text-[var(--text-primary)]">¡Respuesta enviada!</p>
                                 <p className="text-[var(--text-secondary)] text-sm mt-1">Esperando resultados...</p>
                             </div>
@@ -188,22 +211,63 @@ export default function PlayPage({
                     />
                 )}
 
+                {/* WORDCLOUD STATE */}
+                {session.state === 'voting' && currentActivity?.type === 'wordcloud' && (
+                    <WordCloudInput
+                        prompt={currentActivity.config.prompt ?? currentActivity.config.question ?? currentActivity.title}
+                        maxWords={currentActivity.config.max_words ?? 3}
+                        onAnswer={handleWordsSubmit}
+                        answered={answered}
+                    />
+                )}
+
                 {/* RESULTS STATE */}
                 {session.state === 'results' && (
-                    <div className="flex flex-col items-center justify-center flex-1 gap-6">
-                        <div className="neo-card-bright p-8 w-full text-center">
-                            <div className="text-4xl mb-3">🏆</div>
-                            <h2 className="text-2xl font-black text-[#0f0f0f]">Resultados</h2>
-                            <p className="text-[#333] mt-2">El host está mostrando el leaderboard...</p>
+                    <div className="flex flex-col gap-5 w-full" aria-live="polite">
+                        <div className="neo-card-bright p-6 text-center w-full mb-2">
+                            <div className="text-4xl mb-2" aria-hidden="true">🏆</div>
+                            <h2 className="text-2xl font-black text-[#0f0f0f]">Resultados Finales</h2>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            {[...participants].sort((a, b) => b.score - a.score).map((p, i) => (
+                                <div
+                                    key={p.id}
+                                    className="neo-card flex items-center gap-4 px-4 py-3"
+                                    style={{
+                                        background: i === 0 ? '#faff0015' : i === 1 ? '#ffffff08' : 'var(--bg-card)',
+                                        borderColor: i === 0 ? '#faff00' : 'var(--neo-black)',
+                                    }}
+                                >
+                                    <div className="w-6 text-center flex-shrink-0" aria-label={`Posición ${i + 1}`}>
+                                        {i === 0 ? (
+                                            <Trophy size={18} style={{ color: '#faff00' }} aria-hidden="true" />
+                                        ) : i === 1 ? (
+                                            <Medal size={18} style={{ color: '#c0c0c0' }} aria-hidden="true" />
+                                        ) : i === 2 ? (
+                                            <Medal size={18} style={{ color: '#cd7f32' }} aria-hidden="true" />
+                                        ) : (
+                                            <span className="text-sm font-black text-[var(--text-secondary)]">{i + 1}</span>
+                                        )}
+                                    </div>
+                                    <span className="text-xl" aria-hidden="true">{p.avatar_emoji}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-black text-[var(--text-primary)] truncate text-sm">{p.display_name}</p>
+                                        <p className="text-xs text-[var(--text-secondary)]">{PROFESSION_LABELS[p.profession]}</p>
+                                    </div>
+                                    <span className="text-lg font-black" style={{ color: i === 0 ? '#faff00' : 'var(--accent-3)' }} aria-label={`${p.score} puntos`}>
+                                        {p.score.toLocaleString()}
+                                    </span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
 
                 {/* CLOSED STATE */}
                 {session.state === 'closed' && (
-                    <div className="flex flex-col items-center justify-center flex-1 gap-6">
+                    <div className="flex flex-col items-center justify-center flex-1 gap-6" aria-live="polite">
                         <div className="neo-card p-8 w-full text-center">
-                            <div className="text-4xl mb-3">🎉</div>
+                            <div className="text-4xl mb-3" aria-hidden="true">🎉</div>
                             <h2 className="text-2xl font-black text-[var(--text-primary)]">¡Evento terminado!</h2>
                             <p className="text-[var(--text-secondary)] mt-2">Gracias por participar. ¡Sigue conectando!</p>
                         </div>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Share2, CheckCircle } from 'lucide-react';
 import type { Session, Participant, Match } from '@/lib/types';
 import { PROFESSION_LABELS } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
+import ContactExchange from './ContactExchange';
 
 interface MatchCardProps {
     sessionId: string;
@@ -25,8 +25,6 @@ export default function MatchCard({
     totalRounds,
     icebreaker,
 }: MatchCardProps) {
-    const [contactShared, setContactShared] = useState(false);
-
     // Find current user's participant
     const currentUserId =
         typeof window !== 'undefined'
@@ -48,13 +46,6 @@ export default function MatchCard({
         : null;
 
     const partner = participants.find((p) => p.id === partnerId);
-
-    const shareContact = async () => {
-        if (!myMatch) return;
-        const supabase = createClient();
-        await supabase.from('matches').update({ contact_exchanged: true }).eq('id', myMatch.id);
-        setContactShared(true);
-    };
 
     if (!myParticipant) {
         return (
@@ -112,28 +103,9 @@ export default function MatchCard({
             )}
 
             {/* Contact exchange */}
-            {partner && (
-                <button
-                    id="share-contact-btn"
-                    onClick={shareContact}
-                    disabled={contactShared}
-                    className="neo-btn w-full py-4 font-black gap-2"
-                    style={{
-                        background: contactShared ? 'var(--accent-3)' : 'var(--accent-2)',
-                        color: '#fff',
-                    }}
-                >
-                    {contactShared ? (
-                        <>
-                            <CheckCircle size={18} /> ¡Contacto compartido!
-                        </>
-                    ) : (
-                        <>
-                            <Share2 size={18} /> Intercambiar Contacto
-                        </>
-                    )}
-                </button>
-            )}
+            {partner && myParticipant ? (
+                <ContactExchange myMatch={myMatch!} myParticipant={myParticipant} />
+            ) : null}
         </div>
     );
 }
