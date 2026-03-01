@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+/* ╔══════════════════════════════════════════════════════════╗
+   ║  EventConnect — Figma-themed Neobrutalism Design System  ║
+   ║  Figma brand palette: purple, pink, blue, green, orange ║
+   ╚══════════════════════════════════════════════════════════╝ */
+
+/* ── LIGHT MODE (default) ─────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-primary: #f5f5f7;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0f0ff;
+  --bg-surface: #e8e8f0;
+
+  /* Updated brand accents */
+  --accent-blue: #00b6ff;
+  --accent-yellow: #ffc603;
+  --accent-green: #0ACF83;
+  --accent-orange: #FF7262;
+  --accent-purple: #7B61FF;
+
+  /* Semantic aliases */
+  --accent-1: var(--accent-yellow);
+  --accent-2: var(--accent-blue);
+  --accent-3: var(--accent-green);
+  --accent-4: var(--accent-purple);
+
+  --accent-lavender: #c7b9ff;
+  --accent-cta: var(--accent-lavender);
+  --accent-cta-text: #000000;
+
+  /* Text */
+  --text-primary: #000000;
+  --text-secondary: #000000;
+
+  /* Status */
+  --success: #0ACF83;
+  --error: var(--accent-yellow);
+
+  /* Neobrutalism borders/shadows */
+  --neo-black: #0d0d10;
+  --neo-shadow: rgba(0, 182, 255, 0.25);
+  --border: #d0d0e0;
+
+  /* Gradient */
+  --gradient-hero: linear-gradient(135deg, #00b6ff 0%, #ffc603 50%, #1ABCFE 100%);
+}
+
+/* ── DARK MODE ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-primary: #0d0d10;
+  --bg-card: #1a1a2e;
+  --bg-card-hover: #22223e;
+  --bg-surface: #111118;
+
+  /* Updated brand accents */
+  --accent-blue: #00b6ff;
+  --accent-yellow: #ffc603;
+  --accent-green: #0ACF83;
+  --accent-orange: #FF7262;
+  --accent-purple: #7B61FF;
+
+  /* Semantic aliases */
+  --accent-1: var(--accent-yellow);
+  --accent-2: var(--accent-blue);
+  --accent-3: var(--accent-green);
+  --accent-4: var(--accent-purple);
+
+  --accent-lavender: #c7b9ff;
+  --accent-cta: var(--accent-lavender);
+  --accent-cta-text: #000000;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #9090a8;
+
+  /* Status */
+  --success: #0ACF83;
+  --error: var(--accent-yellow);
+
+  /* Neobrutalism borders/shadows */
+  --neo-black: #ffffff;
+  --neo-shadow: rgba(0, 182, 255, 0.5);
+  --border: #2a2a4a;
+
+  /* Gradient */
+  --gradient-hero: linear-gradient(135deg, #00b6ff 0%, #ffc603 50%, #1ABCFE 100%);
+}
+
+/* ── BASE ────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1 {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif !important;
+}
+
+h2,
+h3,
+h4,
+h5,
+h6,
+.title {
+  font-family: 'Mona Sans', system-ui, sans-serif;
+}
+
+/* ── NEOBRUTALISM CARDS ──────────────────────────────────── */
+.neo-card {
+  background: var(--bg-card);
+  border: 3px solid var(--neo-black);
+  box-shadow: 5px 5px 0px var(--neo-black);
+  border-radius: 8px;
+  transition: background 0.2s, box-shadow 0.1s;
+}
+
+.neo-card-bright {
+  background: var(--accent-blue);
+  border: 3px solid var(--neo-black);
+  box-shadow: 5px 5px 0px var(--neo-black);
+  border-radius: 8px;
+  color: #ffffff;
+}
+
+[data-theme="light"] .neo-card-bright {
+  background: var(--accent-blue);
+  color: #000000;
+}
+
+/* ── NEOBRUTALISM BUTTONS ────────────────────────────────── */
+.neo-btn {
+  border: 3px solid var(--neo-black);
+  box-shadow: 4px 4px 0px var(--neo-black);
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.1s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.neo-btn:hover {
+  box-shadow: 6px 6px 0px var(--neo-black);
+  transform: translate(-1px, -1px);
+}
+
+.neo-btn:active {
+  box-shadow: 2px 2px 0px var(--neo-black);
+  transform: translate(2px, 2px);
+}
+
+/* Primary CTA button */
+.neo-btn-primary {
+  background: var(--accent-cta);
+  color: var(--accent-cta-text);
+}
+
+/* ── INPUTS ──────────────────────────────────────────────── */
+.neo-input {
+  border: 3px solid var(--neo-black);
+  box-shadow: 3px 3px 0px var(--neo-black);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: 12px 16px;
+  width: 100%;
+  font-size: 1rem;
+  transition: box-shadow 0.1s ease, background 0.2s;
+}
+
+.neo-input:focus {
+  outline: none;
+  box-shadow: 5px 5px 0px var(--accent-blue);
+}
+
+.neo-input::placeholder {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* ── HERO GRADIENT TEXT ──────────────────────────────────── */
+.gradient-text {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── THEME TOGGLE ────────────────────────────────────────── */
+.theme-toggle {
+  width: 56px;
+  height: 28px;
+  border: 3px solid var(--neo-black);
+  box-shadow: 3px 3px 0 var(--neo-black);
+  border-radius: 100px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  transition: transform 0.2s ease;
+}
+
+[data-theme="light"] .theme-toggle-knob {
+  transform: translateX(28px);
+}
+
+/* ── QUIZ ANSWER COLORS ──────────────────────────────────── */
+.answer-a {
+  background: var(--accent-orange);
+}
+
+.answer-b {
+  background: var(--accent-blue);
+}
+
+.answer-c {
+  background: var(--accent-green);
+}
+
+.answer-d {
+  background: var(--accent-lavender);
+}
+
+/* ── SCROLLBAR ───────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-blue);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+/* ── SELECTION ───────────────────────────────────────────── */
+::selection {
+  background: var(--accent-blue);
+  color: white;
+}
