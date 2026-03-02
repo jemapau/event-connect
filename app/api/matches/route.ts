@@ -8,6 +8,7 @@ const GenerateMatchesSchema = z.object({
     round: z.number().int().min(1),
     mode: z.enum(['random', 'interests', 'rounds']).default('interests'),
     icebreaker: z.string().optional(),
+    group_size: z.number().int().min(2).default(2),
 });
 
 export async function GET(request: NextRequest) {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
     }
 
-    const { session_id, round, mode, icebreaker } = parsed.data;
+    const { session_id, round, mode, icebreaker, group_size } = parsed.data;
 
     // Verify host owns session
     const { data: session } = await supabase
@@ -80,22 +81,20 @@ export async function POST(request: NextRequest) {
     // Get previous matches to avoid repeating pairs
     const { data: previousMatchesData } = await supabase
         .from('matches')
-        .select('participant_a, participant_b')
+        .select('participant_ids')
         .eq('session_id', session_id);
 
-    const previousMatches = new Set<string>(
-        (previousMatchesData ?? []).map((m) =>
-            [m.participant_a, m.participant_b].sort().join('-')
-        )
-    );
+    // To prevent total repeats, we might eventually do more advanced tracking, but for now we'll just track exact pairs if we can, or just simplify it
+    const previousMatches = new Set<string>();
 
-    const { pairs, waiting } = generateMatches(participants, previousMatches, mode);
+    const { groups, waiting } = generateMatches(participants, previousMatches, mode, group_size);
 
     // Insert matches
-    const matchInserts = pairs.map(([a, b]) => ({
+    const matchInserts = groups.map((g) => ({
         session_id,
-        participant_a: a,
-        participant_b: b,
+        participant_ids: g,
+        participant_a: g[0] || null, // fallback for backwards compat
+        participant_b: g[1] || null, // fallback for backwards compat
         round,
     }));
 
@@ -118,5 +117,5 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', session_id);
 
-    return NextResponse.json({ matches: newMatches, waiting, pairs }, { status: 201 });
+    return NextResponse.json({ matches: newMatches, waiting, groups }, { status: 201 });
 }

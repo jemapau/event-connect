@@ -94,13 +94,9 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
         if (currentActivity) {
             await supabase.from('activities').update({ state: 'completed' }).eq('id', currentActivity.id);
         }
-        if (nextPending) {
-            await supabase.from('activities').update({ state: 'active' }).eq('id', nextPending.id);
-            await supabase.from('sessions').update({ state: 'question', current_activity_id: nextPending.id }).eq('id', sessionId);
-        } else {
-            // All done — jump to networking/matching
-            await supabase.from('sessions').update({ state: 'matching', current_activity_id: null }).eq('id', sessionId);
-        }
+
+        // Return to active state waiting for host to manually choose next activity
+        await supabase.from('sessions').update({ state: 'active', current_activity_id: null }).eq('id', sessionId);
         setLoading(false);
     };
 
@@ -128,19 +124,9 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
             };
         }
 
-        if (isInQuestion && nextPending) {
+        if (isInQuestion) {
             return {
-                label: 'Siguiente Pregunta',
-                icon: <SkipForward size={16} />,
-                onClick: finishCurrent,
-                style: { background: 'var(--accent-3)' },
-                textColor: 'text-[var(--text-primary)]',
-            };
-        }
-
-        if (isInQuestion && !nextPending) {
-            return {
-                label: '🏆 Finalizar Quiz',
+                label: '⏹ Finalizar Actividad',
                 icon: <Square size={16} />,
                 onClick: finishCurrent,
                 style: { background: 'var(--accent-1)' },

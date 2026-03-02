@@ -36,17 +36,23 @@ export default function MatchCard({
     // Find my match
     const myMatch = myParticipant
         ? matches.find(
-            (m) => m.participant_a === myParticipant.id || m.participant_b === myParticipant.id
+            (m) =>
+                m.participant_ids?.includes(myParticipant.id) ||
+                m.participant_a === myParticipant.id ||
+                m.participant_b === myParticipant.id
         )
         : null;
 
-    const partnerId = myMatch
-        ? myMatch.participant_a === myParticipant?.id
-            ? myMatch.participant_b
-            : myMatch.participant_a
-        : null;
+    // Get all IDs in the group (fallback to participant_a/b if missing)
+    const teamIds =
+        myMatch?.participant_ids?.length && myMatch.participant_ids.length > 0
+            ? myMatch.participant_ids
+            : [myMatch?.participant_a, myMatch?.participant_b].filter(Boolean) as string[];
 
-    const partner = participants.find((p) => p.id === partnerId);
+    const partnerIds = teamIds.filter((id) => id !== myParticipant?.id);
+    const partners = participants.filter((p) => partnerIds.includes(p.id));
+
+    const isTeam = partners.length > 1;
 
     if (!myParticipant) {
         return (
@@ -64,14 +70,42 @@ export default function MatchCard({
             </div>
 
             {/* Partner card */}
-            {partner ? (
+            {partners.length > 0 ? (
                 <div className="neo-card p-6 text-center">
-                    <p className="text-xs font-black text-[#a0a0b0] mb-4">TU PAREJA ES</p>
-                    <div className="text-6xl mb-3">{partner.avatar_emoji}</div>
-                    <h2 className="text-2xl font-black text-[var(--text-primary)]">{partner.display_name}</h2>
-                    <p className="text-[#a0a0b0] mt-1">{PROFESSION_LABELS[partner.profession]}</p>
-                    {partner.profession_custom && (
-                        <p className="text-sm text-[#a0a0b0]">({partner.profession_custom})</p>
+                    <p className="text-xs font-black text-[#a0a0b0] mb-4">
+                        {isTeam ? 'TU EQUIPO ES' : 'TU PAREJA ES'}
+                    </p>
+                    {isTeam ? (
+                        <div className="flex flex-col gap-3">
+                            {partners.map((p) => (
+                                <div key={p.id} className="flex items-center gap-3 bg-[#f5f5f5] p-3 rounded-lg border-2 border-[#ddd]">
+                                    <div className="text-3xl">{p.avatar_emoji}</div>
+                                    <div className="text-left flex-1 min-w-0">
+                                        <h3 className="text-lg font-black text-[var(--text-primary)] truncate">
+                                            {p.display_name}
+                                        </h3>
+                                        <p className="text-xs text-[#555] truncate">
+                                            {PROFESSION_LABELS[p.profession]}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div>
+                            <div className="text-6xl mb-3">{partners[0].avatar_emoji}</div>
+                            <h2 className="text-2xl font-black text-[var(--text-primary)]">
+                                {partners[0].display_name}
+                            </h2>
+                            <p className="text-[#a0a0b0] mt-1">
+                                {PROFESSION_LABELS[partners[0].profession]}
+                            </p>
+                            {partners[0].profession_custom && (
+                                <p className="text-sm text-[#a0a0b0]">
+                                    ({partners[0].profession_custom})
+                                </p>
+                            )}
+                        </div>
                     )}
                 </div>
             ) : (
@@ -85,7 +119,7 @@ export default function MatchCard({
             )}
 
             {/* Icebreaker */}
-            {partner && (
+            {partners.length > 0 && (
                 <div
                     className="neo-card p-5 border-[#faff00]"
                     style={{ borderColor: 'var(--accent-3)', borderWidth: 3 }}
@@ -97,8 +131,8 @@ export default function MatchCard({
                 </div>
             )}
 
-            {/* Contact exchange */}
-            {partner && myParticipant ? (
+            {/* Contact exchange (only for pairs for now) */}
+            {!isTeam && partners.length === 1 && myParticipant ? (
                 <ContactExchange myMatch={myMatch!} myParticipant={myParticipant} />
             ) : null}
         </div>

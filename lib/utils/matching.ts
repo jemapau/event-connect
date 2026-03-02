@@ -9,78 +9,124 @@ interface Participant {
 export type MatchingMode = 'random' | 'interests' | 'rounds';
 
 export interface MatchResult {
-    pairs: Array<[string, string]>;
+    groups: Array<string[]>;
     waiting: string | null;
 }
 
 export function generateMatches(
     participants: Participant[],
     previousMatches: Set<string>,
-    mode: MatchingMode = 'interests'
+    mode: MatchingMode = 'interests',
+    groupSize: number = 2
 ): MatchResult {
     if (participants.length < 2) {
-        return { pairs: [], waiting: participants[0]?.id ?? null };
+        return { groups: [], waiting: participants[0]?.id ?? null };
     }
     if (mode === 'random') {
-        return generateRandomMatches(participants, previousMatches);
+        return generateRandomMatches(participants, previousMatches, groupSize);
     }
-    return generateInterestMatches(participants, previousMatches);
+    return generateInterestMatches(participants, previousMatches, groupSize);
 }
 
 function generateInterestMatches(
     participants: Participant[],
-    previousMatches: Set<string>
+    previousMatches: Set<string>,
+    groupSize: number
 ): MatchResult {
-    const scores: Array<{ a: string; b: string; score: number }> = [];
+    const available = [...participants];
+    const groups: Array<string[]> = [];
 
-    for (let i = 0; i < participants.length; i++) {
-        for (let j = i + 1; j < participants.length; j++) {
-            const a = participants[i];
-            const b = participants[j];
-            const pairKey = [a.id, b.id].sort().join('-');
-            if (previousMatches.has(pairKey)) continue;
+    const getScore = (a: Participant, b: Participant) => {
+        const shared = a.interests.filter((i) => b.interests.includes(i)).length;
+        const total = new Set([...a.interests, ...b.interests]).size;
+        return total > 0 ? shared / total : 0;
+    };
 
-            const shared = a.interests.filter((interest) =>
-                b.interests.includes(interest)
-            ).length;
-            const total = new Set([...a.interests, ...b.interests]).size;
-            const score = total > 0 ? shared / total : 0; // Jaccard similarity
-            scores.push({ a: a.id, b: b.id, score });
+    while (available.length >= groupSize) {
+        let bestPair = [0, 1];
+        let maxScore = -1;
+
+        for (let i = 0; i < available.length; i++) {
+            for (let j = i + 1; j < available.length; j++) {
+                const score = getScore(available[i], available[j]);
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestPair = [i, j];
+                }
+            }
+        }
+
+        const currentGroup = [available[bestPair[0]], available[bestPair[1]]];
+        // Remove from available safely (highest index first)
+        available.splice(bestPair[1], 1);
+        available.splice(bestPair[0], 1);
+
+        while (currentGroup.length < groupSize && available.length > 0) {
+            let bestNextIdx = 0;
+            let bestNextScore = -1;
+
+            for (let i = 0; i < available.length; i++) {
+                const candidate = available[i];
+                let avgScore = 0;
+                for (const member of currentGroup) {
+                    avgScore += getScore(member, candidate);
+                }
+                avgScore /= currentGroup.length;
+
+                if (avgScore > bestNextScore) {
+                    bestNextScore = avgScore;
+                    bestNextIdx = i;
+                }
+            }
+
+            currentGroup.push(available[bestNextIdx]);
+            available.splice(bestNextIdx, 1);
+        }
+
+        groups.push(currentGroup.map(p => p.id));
+    }
+
+    if (groups.length === 0 && available.length > 0) {
+        groups.push(available.map(p => p.id));
+    } else {
+        let groupIdx = 0;
+        while (available.length > 0) {
+            const leftover = available.pop();
+            if (leftover) {
+                groups[groupIdx % groups.length].push(leftover.id);
+                groupIdx++;
+            }
         }
     }
 
-    // Greedy matching: take the best available pair, remove, repeat
-    scores.sort((x, y) => y.score - x.score);
-    const matched = new Set<string>();
-    const pairs: Array<[string, string]> = [];
-
-    for (const { a, b } of scores) {
-        if (!matched.has(a) && !matched.has(b)) {
-            pairs.push([a, b]);
-            matched.add(a);
-            matched.add(b);
-        }
-    }
-
-    // Handle odd number (someone waits)
-    const waiting = participants.find((p) => !matched.has(p.id))?.id ?? null;
-
-    return { pairs, waiting };
+    return { groups, waiting: null };
 }
 
 function generateRandomMatches(
     participants: Participant[],
-    _previousMatches: Set<string>
+    _previousMatches: Set<string>,
+    groupSize: number
 ): MatchResult {
     const shuffled = [...participants].sort(() => Math.random() - 0.5);
-    const pairs: Array<[string, string]> = [];
+    const groups: Array<string[]> = [];
 
-    for (let i = 0; i < shuffled.length - 1; i += 2) {
-        pairs.push([shuffled[i].id, shuffled[i + 1].id]);
+    while (shuffled.length >= groupSize) {
+        const group = shuffled.splice(0, groupSize);
+        groups.push(group.map(p => p.id));
     }
 
-    const waiting =
-        shuffled.length % 2 !== 0 ? shuffled[shuffled.length - 1].id : null;
+    if (groups.length === 0 && shuffled.length > 0) {
+        groups.push(shuffled.map(p => p.id));
+    } else {
+        let groupIdx = 0;
+        while (shuffled.length > 0) {
+            const leftover = shuffled.pop();
+            if (leftover) {
+                groups[groupIdx % groups.length].push(leftover.id);
+                groupIdx++;
+            }
+        }
+    }
 
-    return { pairs, waiting };
+    return { groups, waiting: null };
 }

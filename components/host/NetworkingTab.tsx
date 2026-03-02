@@ -22,7 +22,8 @@ export default function NetworkingTab({ sessionId, session, participants }: Netw
     const [mode, setMode] = useState<'random' | 'interests' | 'rounds'>(session.matching_mode);
     const [icebreaker, setIcebreaker] = useState(ICEBREAKERS[0]);
     const [loading, setLoading] = useState(false);
-    const [currentMatches, setCurrentMatches] = useState<Array<{ a: string; b: string }>>([]);
+    const [groupSize, setGroupSize] = useState<number>(2);
+    const [currentMatches, setCurrentMatches] = useState<string[][]>([]);
     const [waitingId, setWaitingId] = useState<string | null>(null);
 
     const startRound = async (reshuffle = false) => {
@@ -37,12 +38,13 @@ export default function NetworkingTab({ sessionId, session, participants }: Netw
                 round: nextRound,
                 mode,
                 icebreaker,
+                group_size: groupSize,
             }),
         });
 
         const data = await res.json();
-        if (data.pairs) {
-            setCurrentMatches(data.pairs.map((p: [string, string]) => ({ a: p[0], b: p[1] })));
+        if (data.groups) {
+            setCurrentMatches(data.groups);
             setWaitingId(data.waiting);
         }
         setLoading(false);
@@ -57,6 +59,13 @@ export default function NetworkingTab({ sessionId, session, participants }: Netw
         { value: 'interests', label: 'Por Intereses' },
         { value: 'random', label: 'Aleatorio' },
         { value: 'rounds', label: 'Rondas' },
+    ];
+
+    const groupSizes = [
+        { value: 2, label: 'Parejas (2)' },
+        { value: 3, label: 'Tríos (3)' },
+        { value: 4, label: 'Grupos (4)' },
+        { value: 5, label: 'Equipos (5)' },
     ];
 
     return (
@@ -100,11 +109,30 @@ export default function NetworkingTab({ sessionId, session, participants }: Netw
                             id={`matching-mode-${m.value}`}
                             onClick={() => setMode(m.value)}
                             className={`px-4 py-2 rounded-lg text-sm font-black border-2 transition-all ${mode === m.value
-                                    ? 'border-black bg-[#faff00] text-[#0f0f0f]'
-                                    : 'border-[#2a2a4a] text-[#a0a0b0] hover:text-[var(--text-primary)]'
+                                ? 'border-black bg-[#faff00] text-[#0f0f0f]'
+                                : 'border-[#2a2a4a] text-[#a0a0b0] hover:text-[var(--text-primary)]'
                                 }`}
                         >
                             {m.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Group size selector */}
+            <div className="neo-card p-4">
+                <p className="text-xs font-black text-[#a0a0b0] mb-3">TAMAÑO DEL EQUIPO</p>
+                <div className="flex flex-wrap gap-2">
+                    {groupSizes.map((g) => (
+                        <button
+                            key={g.value}
+                            onClick={() => setGroupSize(g.value)}
+                            className={`px-4 py-2 rounded-lg text-sm font-black border-2 transition-all ${groupSize === g.value
+                                ? 'border-black bg-[#faff00] text-[#0f0f0f]'
+                                : 'border-[#2a2a4a] text-[#a0a0b0] hover:text-[var(--text-primary)]'
+                                }`}
+                        >
+                            {g.label}
                         </button>
                     ))}
                 </div>
@@ -118,8 +146,8 @@ export default function NetworkingTab({ sessionId, session, participants }: Netw
                         <label
                             key={ice}
                             className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition-all ${icebreaker === ice
-                                    ? 'border-[#faff00] bg-[#faff0015]'
-                                    : 'border-transparent hover:border-[#2a2a4a]'
+                                ? 'border-[#faff00] bg-[#faff0015]'
+                                : 'border-transparent hover:border-[#2a2a4a]'
                                 }`}
                         >
                             <input
@@ -135,24 +163,27 @@ export default function NetworkingTab({ sessionId, session, participants }: Netw
                 </div>
             </div>
 
-            {/* Current pairs */}
+            {/* Current groups */}
             {currentMatches.length > 0 && (
                 <div className="neo-card p-4">
                     <p className="text-xs font-black text-[#a0a0b0] mb-3">
-                        PAREJAS ACTIVAS ({currentMatches.length})
+                        EQUIPOS ACTIVOS ({currentMatches.length})
                     </p>
                     <div className="flex flex-col gap-2">
-                        {currentMatches.map(({ a, b }, i) => (
+                        {currentMatches.map((group, i) => (
                             <div
                                 key={i}
-                                className="flex items-center gap-3 p-3 rounded-lg"
+                                className="flex flex-wrap items-center gap-3 p-3 rounded-lg"
                                 style={{ background: '#0f0f1a' }}
                             >
-                                <span className="text-lg">{getEmoji(a)}</span>
-                                <span className="text-sm font-bold text-[var(--text-primary)]">{getName(a)}</span>
-                                <span className="text-[#a0a0b0] font-bold">↔</span>
-                                <span className="text-lg">{getEmoji(b)}</span>
-                                <span className="text-sm font-bold text-[var(--text-primary)]">{getName(b)}</span>
+                                <span className="text-xs font-black text-[var(--accent-1)] mr-2">Equipo #{i + 1}</span>
+                                {group.map((id, idx) => (
+                                    <div key={id} className="flex items-center gap-2">
+                                        {idx > 0 && <span className="text-[#a0a0b0] font-bold mx-1">+</span>}
+                                        <span className="text-lg">{getEmoji(id)}</span>
+                                        <span className="text-sm font-bold text-[var(--text-primary)]">{getName(id)}</span>
+                                    </div>
+                                ))}
                             </div>
                         ))}
                         {waitingId && (

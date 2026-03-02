@@ -158,6 +158,17 @@ export default function PlayPage({
                     </div>
                 )}
 
+                {/* ACTIVE WAITING STATE */}
+                {session.state === 'active' && !currentActivity && (
+                    <div className="flex flex-col items-center justify-center flex-1 text-center gap-6" aria-live="polite">
+                        <div className="neo-card-bright p-8 w-full" style={{ background: 'var(--accent-3)', borderColor: 'var(--neo-black)' }}>
+                            <div className="text-4xl mb-3" aria-hidden="true">👀</div>
+                            <h2 className="text-2xl font-black text-[#0f0f0f]">Prepárate</h2>
+                            <p className="text-[#0f0f0f] mt-2 font-bold">El host está preparando la siguiente actividad...</p>
+                        </div>
+                    </div>
+                )}
+
                 {/* QUIZ STATE */}
                 {(session.state === 'question' || session.state === 'active') && currentActivity?.type === 'quiz' && (
                     <div className="flex flex-col gap-5">

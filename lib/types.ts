@@ -108,8 +108,9 @@ export interface Response {
 export interface Match {
   id: string;
   session_id: string;
-  participant_a: string;
-  participant_b: string;
+  participant_a?: string;
+  participant_b?: string;
+  participant_ids: string[];
   match_score?: number;
   round: number;
   contact_exchanged: boolean;

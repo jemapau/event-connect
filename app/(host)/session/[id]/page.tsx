@@ -13,8 +13,9 @@ import QuizTab from '@/components/host/QuizTab';
 import NetworkingTab from '@/components/host/NetworkingTab';
 import ResultsTab from '@/components/host/ResultsTab';
 import ParticipantList from '@/components/host/ParticipantList';
+import ActivitiesTab from '@/components/host/ActivitiesTab';
 
-type Tab = 'quiz' | 'networking' | 'resultados' | 'config';
+type Tab = 'actividades' | 'quiz' | 'networking' | 'resultados' | 'config';
 
 export default function HostSessionPage({
     params,
@@ -22,7 +23,7 @@ export default function HostSessionPage({
     params: Promise<{ id: string }>;
 }) {
     const { id: sessionId } = use(params);
-    const [activeTab, setActiveTab] = useState<Tab>('quiz');
+    const [activeTab, setActiveTab] = useState<Tab>('actividades');
     const [qrDataUrl, setQrDataUrl] = useState('');
 
     const session = useSessionChannel(sessionId);
@@ -56,7 +57,8 @@ export default function HostSessionPage({
     }
 
     const tabs: { key: Tab; label: string }[] = [
-        { key: 'quiz', label: 'Quiz' },
+        { key: 'actividades', label: 'Actividades' },
+        { key: 'quiz', label: 'Preguntas/Polls' },
         { key: 'networking', label: 'Networking' },
         { key: 'resultados', label: 'Resultados' },
         { key: 'config', label: 'Config' },
@@ -107,15 +109,27 @@ export default function HostSessionPage({
 
             {/* Main content */}
             <div className="flex-1 flex gap-0 overflow-hidden">
-                {/* Left panel — QR + Stats */}
-                <aside className="w-72 border-r border-[#2a2a4a] p-5 flex flex-col gap-5 overflow-y-auto">
-                    <QRDisplay pin={session.pin} qrDataUrl={qrDataUrl} />
-                    <LiveStats participants={participants} />
-                    <ParticipantList participants={participants} />
-                </aside>
+                {/* Left panel — QR + Stats (Only visible on Actividades tab) */}
+                {activeTab === 'actividades' && (
+                    <aside className="w-72 border-r border-[#2a2a4a] p-5 flex flex-col gap-5 overflow-y-auto">
+                        <QRDisplay pin={session.pin} qrDataUrl={qrDataUrl} />
+                        <LiveStats participants={participants} />
+                        <ParticipantList participants={participants} />
+                    </aside>
+                )}
 
                 {/* Right panel — Active tab */}
                 <main className="flex-1 p-6 overflow-y-auto">
+                    {activeTab === 'actividades' && (
+                        <ActivitiesTab
+                            sessionId={sessionId}
+                            session={session}
+                            onSelectActivity={(type) => {
+                                if (type === 'networking') setActiveTab('networking');
+                                else setActiveTab('quiz');
+                            }}
+                        />
+                    )}
                     {activeTab === 'quiz' && (
                         <QuizTab
                             sessionId={sessionId}
