@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         );
     }
 
+
     // Insert participant using service role (bypasses RLS)
     const { data: participant, error: participantError } = await supabase
         .from('participants')

@@ -146,7 +146,7 @@ function JoinPageContent() {
                                     <input
                                         id="name-input"
                                         className="neo-input"
-                                        placeholder="Ana Martínez"
+                                        placeholder="ej: Luisa"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         required
@@ -206,9 +206,9 @@ function JoinPageContent() {
                                 <button
                                     id="join-submit-btn"
                                     type="submit"
-                                    disabled={loading || !name.trim()}
-                                    className="neo-btn w-full py-4 text-[var(--accent-cta-text)] font-black"
-                                    style={{ background: loading ? '#888' : 'var(--accent-1)' }}
+                                    disabled={loading || !name.trim() || !emoji || !profession || (profession === 'otro' && !professionCustom.trim())}
+                                    className="neo-btn w-full py-4 text-[var(--accent-cta-text)] font-black transition-colors"
+                                    style={{ background: (loading || !name.trim() || !emoji || !profession || (profession === 'otro' && !professionCustom.trim())) ? '#ccc' : 'var(--accent-1)' }}
                                 >
                                     {loading ? 'Uniéndome...' : `${emoji} Entrar al Evento`}
                                 </button>

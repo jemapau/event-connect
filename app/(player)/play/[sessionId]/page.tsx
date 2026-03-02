@@ -2,13 +2,14 @@
 
 import { use, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSessionChannel, useParticipants, useActivityUpdates, useMatchUpdates, useHostBroadcast } from '@/lib/realtime/hooks';
 import QuizOptions from '@/components/player/QuizOptions';
 import PollVote from '@/components/player/PollVote';
 import WordCloudInput from '@/components/player/WordCloudInput';
 import MatchCard from '@/components/player/MatchCard';
 import NeobrutalistCountdown from '@/components/shared/Countdown';
-import { Users, Trophy, Clock, ArrowLeft, Medal } from 'lucide-react';
+import { Users, Trophy, Clock, ArrowLeft, Medal, ArrowRight } from 'lucide-react';
 import { PROFESSION_LABELS } from '@/lib/types';
 
 export default function PlayPage({
@@ -17,6 +18,7 @@ export default function PlayPage({
     params: Promise<{ sessionId: string }>;
 }) {
     const { sessionId } = use(params);
+    const router = useRouter();
     const session = useSessionChannel(sessionId);
     const participants = useParticipants(sessionId);
     const { currentActivity } = useActivityUpdates(sessionId);
@@ -25,11 +27,21 @@ export default function PlayPage({
     const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
     const [timeLeft, setTimeLeft] = useState(0);
     const [participantId, setParticipantId] = useState<string | null>(null);
+    const [activeSessions, setActiveSessions] = useState<{ id: string; title: string; pin: string }[]>([]);
 
     useEffect(() => {
         const stored = localStorage.getItem(`ec_participant_${sessionId}`);
         if (stored) setParticipantId(stored);
     }, [sessionId]);
+
+    useEffect(() => {
+        if (session?.state === 'results' || session?.state === 'closed') {
+            fetch('/api/sessions/active')
+                .then(res => res.json())
+                .then(data => setActiveSessions(data.sessions || []))
+                .catch(console.error);
+        }
+    }, [session?.state]);
 
     // Handle host broadcasts
     const handleBroadcast = useCallback((event: string, payload: unknown) => {
@@ -93,6 +105,8 @@ export default function PlayPage({
             console.error('Error enviando palabras', e);
         }
     };
+
+    const myParticipant = participants.find((p) => p.id === participantId);
 
     if (!session) {
         return (
@@ -224,42 +238,78 @@ export default function PlayPage({
                 {/* RESULTS STATE */}
                 {session.state === 'results' && (
                     <div className="flex flex-col gap-5 w-full" aria-live="polite">
+                        {myParticipant?.score === 0 && (
+                            <div className="neo-card-bright p-5 w-full text-center bg-[#f0f0f0] border-dashed border-[#888]">
+                                <div className="text-3xl mb-2" aria-hidden="true">👀</div>
+                                <h3 className="font-black text-[#0f0f0f]">Modo Espectador</h3>
+                                <p className="text-sm mt-1 text-[#555]">Llegaste cuando las actividades terminaron, pero mira quiénes ganaron.</p>
+                            </div>
+                        )}
                         <div className="neo-card-bright p-6 text-center w-full mb-2">
                             <div className="text-4xl mb-2" aria-hidden="true">🏆</div>
                             <h2 className="text-2xl font-black text-[#0f0f0f]">Resultados Finales</h2>
                         </div>
                         <div className="flex flex-col gap-3">
-                            {[...participants].sort((a, b) => b.score - a.score).map((p, i) => (
-                                <div
-                                    key={p.id}
-                                    className="neo-card flex items-center gap-4 px-4 py-3"
-                                    style={{
-                                        background: i === 0 ? '#faff0015' : i === 1 ? '#ffffff08' : 'var(--bg-card)',
-                                        borderColor: i === 0 ? '#faff00' : 'var(--neo-black)',
-                                    }}
-                                >
-                                    <div className="w-6 text-center flex-shrink-0" aria-label={`Posición ${i + 1}`}>
-                                        {i === 0 ? (
-                                            <Trophy size={18} style={{ color: '#faff00' }} aria-hidden="true" />
-                                        ) : i === 1 ? (
-                                            <Medal size={18} style={{ color: '#c0c0c0' }} aria-hidden="true" />
-                                        ) : i === 2 ? (
-                                            <Medal size={18} style={{ color: '#cd7f32' }} aria-hidden="true" />
-                                        ) : (
-                                            <span className="text-sm font-black text-[var(--text-secondary)]">{i + 1}</span>
-                                        )}
+                            {[...participants]
+                                .filter(p => p.score > 0 || p.id === participantId) // Hide 0 pointers except self if they played
+                                .filter(p => session.state !== 'results' || p.score > 0) // Strictly hide 0 pointers in results
+                                .sort((a, b) => b.score - a.score)
+                                .map((p, i) => (
+                                    <div
+                                        key={p.id}
+                                        className="neo-card flex items-center gap-4 px-4 py-3"
+                                        style={{
+                                            background: i === 0 ? '#faff0015' : i === 1 ? '#ffffff08' : 'var(--bg-card)',
+                                            borderColor: i === 0 ? '#faff00' : 'var(--neo-black)',
+                                        }}
+                                    >
+                                        <div className="w-6 text-center flex-shrink-0" aria-label={`Posición ${i + 1}`}>
+                                            {i === 0 ? (
+                                                <Trophy size={18} style={{ color: '#faff00' }} aria-hidden="true" />
+                                            ) : i === 1 ? (
+                                                <Medal size={18} style={{ color: '#c0c0c0' }} aria-hidden="true" />
+                                            ) : i === 2 ? (
+                                                <Medal size={18} style={{ color: '#cd7f32' }} aria-hidden="true" />
+                                            ) : (
+                                                <span className="text-sm font-black text-[var(--text-secondary)]">{i + 1}</span>
+                                            )}
+                                        </div>
+                                        <span className="text-xl" aria-hidden="true">{p.avatar_emoji}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-black text-[var(--text-primary)] truncate text-sm">{p.display_name}</p>
+                                            <p className="text-xs text-[var(--text-secondary)]">{PROFESSION_LABELS[p.profession]}</p>
+                                        </div>
+                                        <span className="text-lg font-black" style={{ color: i === 0 ? '#faff00' : 'var(--accent-3)' }} aria-label={`${p.score} puntos`}>
+                                            {p.score.toLocaleString()}
+                                        </span>
                                     </div>
-                                    <span className="text-xl" aria-hidden="true">{p.avatar_emoji}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-black text-[var(--text-primary)] truncate text-sm">{p.display_name}</p>
-                                        <p className="text-xs text-[var(--text-secondary)]">{PROFESSION_LABELS[p.profession]}</p>
-                                    </div>
-                                    <span className="text-lg font-black" style={{ color: i === 0 ? '#faff00' : 'var(--accent-3)' }} aria-label={`${p.score} puntos`}>
-                                        {p.score.toLocaleString()}
-                                    </span>
-                                </div>
-                            ))}
+                                ))}
                         </div>
+
+                        {(myParticipant?.score === 0) && (
+                            <div className="mt-6 border-t-2 border-dashed border-[#444] pt-6">
+                                <h3 className="font-black text-[var(--text-primary)] mb-4">Otras sesiones activas:</h3>
+                                {activeSessions.length > 0 ? (
+                                    <div className="flex flex-col gap-3">
+                                        {activeSessions.map(s => (
+                                            <button
+                                                key={s.id}
+                                                onClick={() => router.push(`/join?pin=${s.pin}`)}
+                                                className="neo-card flex items-center justify-between p-4 hover:bg-[var(--accent-1)] hover:text-black transition-colors group text-left"
+                                            >
+                                                <div>
+                                                    <p className="font-black group-hover:text-black text-[var(--text-primary)]">{s.title}</p>
+                                                    <p className="text-xs text-[var(--text-secondary)] group-hover:text-black/70">PIN: {s.pin.substring(0, 3)} {s.pin.substring(3)}</p>
+                                                </div>
+                                                <ArrowRight size={18} className="text-[var(--text-primary)] group-hover:text-black" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm font-bold text-[var(--text-secondary)] mb-8">Actualmente no hay otras sesiones abiertas.</p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 

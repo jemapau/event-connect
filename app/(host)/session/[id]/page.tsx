@@ -137,6 +137,7 @@ export default function HostSessionPage({
 
 function ConfigPanel({ session }: { session: { id: string; title: string; state: string; expires_at: string } }) {
     const [closing, setClosing] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const router = useRouter();
 
     const closeSession = async () => {
@@ -145,6 +146,25 @@ function ConfigPanel({ session }: { session: { id: string; title: string; state:
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: session.id, state: 'closed' }),
+        });
+
+        // Wait a small bit and redirect to trigger refresh
+        setTimeout(() => {
+            router.push('/dashboard');
+            router.refresh();
+        }, 500);
+    };
+
+    const deleteSession = async () => {
+        if (!window.confirm('¿Estás seguro de que deseas eliminar este evento permanentemente? Esta acción borrará a todos los participantes, respuestas y rondas de networking, y no se puede deshacer.')) {
+            return;
+        }
+
+        setDeleting(true);
+        await fetch(`/api/sessions`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: session.id }),
         });
 
         // Wait a small bit and redirect to trigger refresh
@@ -169,15 +189,26 @@ function ConfigPanel({ session }: { session: { id: string; title: string; state:
                 <p className="text-sm text-[#a0a0b0] mb-1">Expira</p>
                 <p className="font-black text-[var(--text-primary)]">{new Date(session.expires_at).toLocaleString('es-MX')}</p>
             </div>
-            <button
-                onClick={closeSession}
-                disabled={closing}
-                id="close-session-btn"
-                className="neo-btn py-3 font-black text-[var(--text-primary)] w-full"
-                style={{ background: 'var(--accent-1)' }}
-            >
-                {closing ? 'Cerrando...' : '⛔ Cerrar Sesión'}
-            </button>
+            <div className="flex flex-col gap-3 mt-4">
+                <button
+                    onClick={closeSession}
+                    disabled={closing || deleting}
+                    id="close-session-btn"
+                    className="neo-btn py-3 font-black text-[var(--text-primary)] w-full"
+                    style={{ background: closing || deleting ? '#555' : 'var(--accent-1)' }}
+                >
+                    {closing ? 'Cerrando...' : '⛔ Cerrar Sesión'}
+                </button>
+                <button
+                    onClick={deleteSession}
+                    disabled={closing || deleting}
+                    id="delete-session-btn"
+                    className="neo-btn py-3 font-black text-white w-full border-[#d90429]"
+                    style={{ background: closing || deleting ? '#555' : '#d90429' }}
+                >
+                    {deleting ? 'Eliminando...' : '🗑️ Eliminar Evento Definitivamente'}
+                </button>
+            </div>
         </div>
     );
 }
