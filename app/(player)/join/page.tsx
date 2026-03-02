@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { useSessionChannel } from '@/lib/realtime/hooks';
 
 const EMOJIS = ['😊', '🚀', '🎨', '💡', '🔥', '⚡', '🌟', '🦊', '🐙', '🎯', '🦄', '🐉'];
 
@@ -14,6 +15,14 @@ const PROFESSIONS: { value: Profession; label: string; emoji: string }[] = [
     { value: 'diseno_ui', label: 'UI Design', emoji: '🎨' },
     { value: 'product_design', label: 'Product Design', emoji: '📦' },
     { value: 'otro', label: 'Otro', emoji: '✏️' },
+];
+
+const INTEREST_TAGS = [
+    { id: 'ux', label: 'Diseño UX', emoji: '🎨' },
+    { id: 'producto', label: 'Estrategia de Producto', emoji: '🚀' },
+    { id: 'ia', label: 'Inteligencia Artificial', emoji: '🤖' },
+    { id: 'frontend', label: 'Desarrollo Frontend', emoji: '💻' },
+    { id: 'liderazgo', label: 'Liderazgo', emoji: '🤝' },
 ];
 
 function JoinPageContent() {
@@ -27,9 +36,19 @@ function JoinPageContent() {
     const [emoji, setEmoji] = useState('😊');
     const [profession, setProfession] = useState<Profession>('diseno_ux');
     const [professionCustom, setProfessionCustom] = useState('');
+    const [interests, setInterests] = useState<string[]>([]);
     const [sessionId, setSessionId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const session = useSessionChannel(sessionId);
+
+    // Auto-redirect if the session is already active or question
+    useEffect(() => {
+        if (step === 4 && sessionId && session && session.state !== 'lobby') {
+            router.push(`/play/${sessionId}`);
+        }
+    }, [step, sessionId, session, router]);
 
     const validatePin = async () => {
         const clean = pin.replace(/\s/g, '');
@@ -38,9 +57,14 @@ function JoinPageContent() {
         setStep(2);
     };
 
-    const handleJoin = async (e: React.FormEvent) => {
+    const goToStep3 = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) return;
+        setStep(3);
+    };
+
+    const handleJoin = async () => {
+        if (interests.length < 3) return;
         setLoading(true);
         setError('');
 
@@ -54,6 +78,7 @@ function JoinPageContent() {
                     avatar_emoji: emoji,
                     profession,
                     profession_custom: profession === 'otro' ? professionCustom : undefined,
+                    interests,
                 }),
             });
 
@@ -66,7 +91,7 @@ function JoinPageContent() {
 
             setSessionId(data.session.id);
             localStorage.setItem(`ec_participant_${data.session.id}`, data.participant.id);
-            setStep(3);
+            setStep(4);
         } catch {
             setError('Error de conexión');
         } finally {
@@ -93,7 +118,7 @@ function JoinPageContent() {
                 <div className="w-full max-w-sm">
                     {/* Progress dots */}
                     <div className="flex justify-center gap-2 mb-8">
-                        {[1, 2, 3].map((s) => (
+                        {[1, 2, 3, 4].map((s) => (
                             <div
                                 key={s}
                                 className="w-3 h-3 rounded-full border-2 border-black transition-all"
@@ -139,7 +164,7 @@ function JoinPageContent() {
                             <h1 className="text-2xl font-black text-[#0f0f0f] mb-2">¿Quién eres?</h1>
                             <p className="text-sm text-[#555] mb-6">PIN: <strong>{pin}</strong></p>
 
-                            <form onSubmit={handleJoin} className="flex flex-col gap-5">
+                            <form onSubmit={goToStep3} className="flex flex-col gap-5">
                                 {/* Name */}
                                 <div>
                                     <label className="block text-sm font-black text-[#0f0f0f] mb-1">Tu nombre *</label>
@@ -204,24 +229,81 @@ function JoinPageContent() {
                                 {error && <p className="text-sm font-bold" style={{ color: 'var(--accent-1)' }}>{error}</p>}
 
                                 <button
-                                    id="join-submit-btn"
+                                    id="to-step3-btn"
                                     type="submit"
-                                    disabled={loading || !name.trim() || !emoji || !profession || (profession === 'otro' && !professionCustom.trim())}
+                                    disabled={!name.trim() || !emoji || !profession || (profession === 'otro' && !professionCustom.trim())}
                                     className="neo-btn w-full py-4 text-[var(--accent-cta-text)] font-black transition-colors"
-                                    style={{ background: (loading || !name.trim() || !emoji || !profession || (profession === 'otro' && !professionCustom.trim())) ? '#ccc' : 'var(--accent-1)' }}
+                                    style={{ background: (!name.trim() || !emoji || !profession || (profession === 'otro' && !professionCustom.trim())) ? '#ccc' : 'var(--accent-1)' }}
                                 >
-                                    {loading ? 'Uniéndome...' : `${emoji} Entrar al Evento`}
+                                    Continuar <ArrowRight size={18} className="inline-block" />
                                 </button>
                             </form>
                         </div>
                     )}
 
-                    {/* Step 3: Ready! */}
+                    {/* Step 3: Interests */}
                     {step === 3 && (
+                        <div className="neo-card p-8" style={{ background: '#fff' }}>
+                            <h1 className="text-2xl font-black text-[#0f0f0f] mb-2">Tus intereses</h1>
+                            <p className="text-sm text-[#555] mb-6">Selecciona al menos 3 temas para hacer match con personas afines.</p>
+
+                            <div className="flex flex-col gap-3 mb-6">
+                                {INTEREST_TAGS.map((tag) => {
+                                    const isSelected = interests.includes(tag.label);
+                                    return (
+                                        <button
+                                            key={tag.id}
+                                            onClick={() => {
+                                                if (isSelected) setInterests(ints => ints.filter(i => i !== tag.label));
+                                                else setInterests(ints => [...ints, tag.label]);
+                                            }}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all w-full text-left font-bold ${isSelected
+                                                    ? 'border-black bg-[#faff00] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                                    : 'border-[#ddd] bg-[#f5f5f5] hover:border-[#aaa]'
+                                                }`}
+                                        >
+                                            <span className="text-xl">{tag.emoji}</span>
+                                            <span className="text-[var(--text-primary)]">{tag.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="mb-4">
+                                <div className="h-2 w-full bg-[#f5f5f5] rounded-full overflow-hidden border border-[#ddd]">
+                                    <div
+                                        className="h-full transition-all duration-300"
+                                        style={{
+                                            width: `${Math.min(100, (interests.length / 3) * 100)}%`,
+                                            background: interests.length >= 3 ? '#5ab651' : 'var(--accent-3)'
+                                        }}
+                                    />
+                                </div>
+                                <p className="text-xs font-bold text-center mt-2" style={{ color: interests.length >= 3 ? '#5ab651' : '#888' }}>
+                                    {interests.length < 3 ? `Faltan ${3 - interests.length}` : '¡Listo!'}
+                                </p>
+                            </div>
+
+                            {error && <p className="text-sm font-bold mb-3" style={{ color: 'var(--accent-1)' }}>{error}</p>}
+
+                            <button
+                                id="join-submit-btn"
+                                onClick={handleJoin}
+                                disabled={loading || interests.length < 3}
+                                className="neo-btn w-full py-4 text-[var(--accent-cta-text)] font-black transition-colors"
+                                style={{ background: (loading || interests.length < 3) ? '#ccc' : 'var(--accent-1)' }}
+                            >
+                                {loading ? 'Uniéndome...' : `${emoji} Entrar al Evento`}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Step 4: Ready! */}
+                    {step === 4 && (
                         <div className="neo-card p-8 text-center" style={{ background: '#fff' }}>
                             <div className="text-6xl mb-4">{emoji}</div>
                             <h2 className="text-2xl font-black text-[#0f0f0f] mb-2">¡Listo, {name}!</h2>
-                            <p className="text-[#555] mb-6">Ya estás en la sesión. Espera a que el host inicie.</p>
+                            <p className="text-[#555] mb-6">Ya estás en la sesión. Entrando automáticamente o haz clic en el botón.</p>
                             <button
                                 id="enter-lobby-btn"
                                 onClick={enterLobby}

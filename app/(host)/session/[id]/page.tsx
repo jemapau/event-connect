@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Play, Pause, SkipForward, Shuffle, Users, Wifi } from 'lucide-react';
@@ -28,12 +28,24 @@ export default function HostSessionPage({
     const session = useSessionChannel(sessionId);
     const participants = useParticipants(sessionId);
     const { activities, currentActivity } = useActivityUpdates(sessionId);
+    const lastSessionStateRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (session?.pin) {
             generateQRDataURL(session.pin).then(setQrDataUrl);
         }
     }, [session?.pin]);
+
+    useEffect(() => {
+        if (!session?.state || session.state === lastSessionStateRef.current) return;
+
+        if (session.state === 'matching' && activeTab !== 'networking') {
+            setActiveTab('networking');
+        } else if (session.state === 'results' && activeTab !== 'resultados') {
+            setActiveTab('resultados');
+        }
+        lastSessionStateRef.current = session.state;
+    }, [session?.state, activeTab]);
 
     if (!session) {
         return (
@@ -138,6 +150,7 @@ export default function HostSessionPage({
 function ConfigPanel({ session }: { session: { id: string; title: string; state: string; expires_at: string } }) {
     const [closing, setClosing] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const router = useRouter();
 
     const closeSession = async () => {
@@ -156,10 +169,6 @@ function ConfigPanel({ session }: { session: { id: string; title: string; state:
     };
 
     const deleteSession = async () => {
-        if (!window.confirm('¿Estás seguro de que deseas eliminar este evento permanentemente? Esta acción borrará a todos los participantes, respuestas y rondas de networking, y no se puede deshacer.')) {
-            return;
-        }
-
         setDeleting(true);
         await fetch(`/api/sessions`, {
             method: 'DELETE',
@@ -200,7 +209,7 @@ function ConfigPanel({ session }: { session: { id: string; title: string; state:
                     {closing ? 'Cerrando...' : '⛔ Cerrar Sesión'}
                 </button>
                 <button
-                    onClick={deleteSession}
+                    onClick={() => setShowDeleteModal(true)}
                     disabled={closing || deleting}
                     id="delete-session-btn"
                     className="neo-btn py-3 font-black text-white w-full border-[#d90429]"
@@ -209,6 +218,37 @@ function ConfigPanel({ session }: { session: { id: string; title: string; state:
                     {deleting ? 'Eliminando...' : '🗑️ Eliminar Evento Definitivamente'}
                 </button>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                    <div className="neo-card p-8 max-w-md w-full" style={{ background: 'var(--bg-primary)' }}>
+                        <h3 className="text-xl font-black text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                            ⚠️ Confirmar Eliminación
+                        </h3>
+                        <p className="text-[var(--text-secondary)] mb-6">
+                            ¿Estás seguro de que deseas eliminar este evento permanentemente? Esta acción borrará a todos los participantes, respuestas y rondas de networking, y <strong>no se puede deshacer</strong>.
+                        </p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={deleting}
+                                className="neo-btn flex-1 py-3 font-black text-[var(--text-primary)] bg-[var(--bg-card)] hover:bg-[#2a2a4a] transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={deleteSession}
+                                disabled={deleting}
+                                className="neo-btn flex-1 py-3 font-black text-white border-[#d90429] transition-colors"
+                                style={{ background: deleting ? '#555' : '#d90429' }}
+                            >
+                                {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

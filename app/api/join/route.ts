@@ -8,6 +8,7 @@ const JoinSchema = z.object({
     avatar_emoji: z.string().default('😊'),
     profession: z.enum(['diseno_ux', 'diseno_ui', 'product_design', 'otro']),
     profession_custom: z.string().optional(),
+    interests: z.array(z.string()).default([]),
 });
 
 // Create a service-role client that bypasses RLS (needed for anonymous joins)
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
     }
 
-    const { pin, display_name, avatar_emoji, profession, profession_custom } = parsed.data;
+    const { pin, display_name, avatar_emoji, profession, profession_custom, interests } = parsed.data;
 
     // Use service client to bypass RLS for the session lookup
     const supabase = createServiceClient();
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
             avatar_emoji,
             profession,
             profession_custom,
+            interests,
         })
         .select()
         .single();

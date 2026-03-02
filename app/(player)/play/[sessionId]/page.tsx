@@ -149,7 +149,7 @@ export default function PlayPage({
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 {participants.map((p) => (
-                                    <span key={p.id} className="flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold border border-[#2a2a4a] text-white">
+                                    <span key={p.id} className="flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold border border-[#2a2a4a] text-[#0f0f0f] bg-[#f5f5f5]">
                                         {p.avatar_emoji} {p.display_name}
                                     </span>
                                 ))}

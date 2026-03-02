@@ -5,6 +5,7 @@ import { Share2, CheckCircle } from 'lucide-react';
 import type { Session, Participant, Match } from '@/lib/types';
 import { PROFESSION_LABELS } from '@/lib/types';
 import ContactExchange from './ContactExchange';
+import ProgressBar from '@/components/shared/ProgressBar';
 
 interface MatchCardProps {
     sessionId: string;
@@ -50,7 +51,7 @@ export default function MatchCard({
     if (!myParticipant) {
         return (
             <div className="neo-card p-8 text-center">
-                <p className="text-white font-black">Cargando tu pareja...</p>
+                <p className="text-[var(--text-primary)] font-black">Cargando tu pareja...</p>
             </div>
         );
     }
@@ -58,14 +59,8 @@ export default function MatchCard({
     return (
         <div className="flex flex-col gap-5">
             {/* Round indicator */}
-            <div className="flex justify-between items-center">
-                <span className="text-sm font-black text-[#a0a0b0]">NETWORKING</span>
-                <span
-                    className="text-sm font-black px-3 py-1 rounded-full border-2 border-black"
-                    style={{ background: '#faff00', color: '#0f0f0f' }}
-                >
-                    Ronda {round} / {totalRounds}
-                </span>
+            <div className="mb-4">
+                <ProgressBar current={round} total={totalRounds} label="RONDA NETWORKING" />
             </div>
 
             {/* Partner card */}
@@ -73,7 +68,7 @@ export default function MatchCard({
                 <div className="neo-card p-6 text-center">
                     <p className="text-xs font-black text-[#a0a0b0] mb-4">TU PAREJA ES</p>
                     <div className="text-6xl mb-3">{partner.avatar_emoji}</div>
-                    <h2 className="text-2xl font-black text-white">{partner.display_name}</h2>
+                    <h2 className="text-2xl font-black text-[var(--text-primary)]">{partner.display_name}</h2>
                     <p className="text-[#a0a0b0] mt-1">{PROFESSION_LABELS[partner.profession]}</p>
                     {partner.profession_custom && (
                         <p className="text-sm text-[#a0a0b0]">({partner.profession_custom})</p>
@@ -82,7 +77,7 @@ export default function MatchCard({
             ) : (
                 <div className="neo-card p-8 text-center border-dashed">
                     <div className="text-4xl mb-3">⏳</div>
-                    <p className="font-black text-white">En espera</p>
+                    <p className="font-black text-[var(--text-primary)]">En espera</p>
                     <p className="text-sm text-[#a0a0b0] mt-1">
                         Te conectaremos en la próxima ronda
                     </p>
@@ -98,7 +93,7 @@ export default function MatchCard({
                     <p className="text-xs font-black mb-2" style={{ color: 'var(--accent-3)' }}>
                         💬 ICEBREAKER
                     </p>
-                    <p className="text-white font-bold leading-relaxed">&ldquo;{icebreaker}&rdquo;</p>
+                    <p className="text-[var(--text-primary)] font-bold leading-relaxed">&ldquo;{icebreaker}&rdquo;</p>
                 </div>
             )}
 

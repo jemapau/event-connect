@@ -98,8 +98,8 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
             await supabase.from('activities').update({ state: 'active' }).eq('id', nextPending.id);
             await supabase.from('sessions').update({ state: 'question', current_activity_id: nextPending.id }).eq('id', sessionId);
         } else {
-            // All done — show results
-            await supabase.from('sessions').update({ state: 'results', current_activity_id: null }).eq('id', sessionId);
+            // All done — jump to networking/matching
+            await supabase.from('sessions').update({ state: 'matching', current_activity_id: null }).eq('id', sessionId);
         }
         setLoading(false);
     };
@@ -120,7 +120,7 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
 
         if (isLobbyOrActive && firstPending) {
             return {
-                label: completedCount === 0 ? '▶ Iniciar Quiz' : '▶ Continuar Quiz',
+                label: completedCount === 0 ? 'Iniciar Quiz' : 'Continuar Quiz',
                 icon: <Play size={16} fill="currentColor" />,
                 onClick: () => launchActivity(firstPending.id),
                 style: { background: '#faff00' },
@@ -130,7 +130,7 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
 
         if (isInQuestion && nextPending) {
             return {
-                label: '⏭ Siguiente Pregunta',
+                label: 'Siguiente Pregunta',
                 icon: <SkipForward size={16} />,
                 onClick: finishCurrent,
                 style: { background: 'var(--accent-3)' },
