@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.Spec_EventConnect
 
 # debug
 npm-debug.log*
