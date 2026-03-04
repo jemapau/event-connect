@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     if (activity.type === 'quiz' && typeof value === 'object' && value.selected_index !== undefined) {
         if (value.selected_index === activity.config.correct_index) {
-            score_earned = 1000;
+            score_earned = 10;
         }
     }
 
@@ -63,12 +63,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    let new_score = 0;
     if (score_earned > 0) {
         const { data: pData } = await supabase.from('participants').select('score').eq('id', participant_id).single();
         if (pData) {
-            await supabase.from('participants').update({ score: (pData.score || 0) + score_earned }).eq('id', participant_id);
+            new_score = (pData.score || 0) + score_earned;
+            await supabase.from('participants').update({ score: new_score }).eq('id', participant_id);
         }
     }
 
-    return NextResponse.json({ response: data }, { status: 201 });
+    return NextResponse.json({ response: data, score_earned, new_score }, { status: 201 });
 }

@@ -30,8 +30,10 @@ export default function HostDashboard() {
 
         const supabase = createClient();
         supabase.auth.getUser()
-            .then(({ data: { user }, error }) => {
+            .then(async ({ data: { user }, error }) => {
                 if (error || !user) {
+                    // Clear any stale/invalid tokens (e.g. expired refresh token)
+                    await supabase.auth.signOut();
                     setAuthState('unauthenticated');
                     return;
                 }

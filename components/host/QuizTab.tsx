@@ -7,11 +7,11 @@ import { createClient } from '@/lib/supabase/client';
 import QuestionBuilder from './QuestionBuilder';
 
 const DEMO_QUESTIONS = [
-    { title: 'Components', type: 'quiz' as const, config: { question: '¿Qué función de Figma permite reutilizar elementos de diseño (como botones, iconos o tarjetas) en múltiples pantallas?', options: ['Auto Layout', 'Components (Componentes)', 'Frames', 'Variants'], correct_index: 1, time_limit_seconds: 5 } },
-    { title: 'Auto Layout', type: 'quiz' as const, config: { question: '¿Cómo se llama la funcionalidad de Figma que genera diseños responsivos y flexibles automáticamente?', options: ['Constraints', 'Grid Layout', 'Auto Layout', 'Smart Animate'], correct_index: 2, time_limit_seconds: 5 } },
-    { title: 'Team Project', type: 'quiz' as const, config: { question: '¿Cuál es el nombre del espacio en Figma donde los equipos comparten y gestionan archivos colaborativamente?', options: ['Workspace', 'Team Project', 'Design Hub', 'Canvas'], correct_index: 1, time_limit_seconds: 5 } },
-    { title: 'Prototype', type: 'quiz' as const, config: { question: '¿Qué herramienta de Figma permite crear animaciones y transiciones entre frames para simular una app?', options: ['FigJam', 'Dev Mode', 'Prototype', 'Inspect'], correct_index: 2, time_limit_seconds: 5 } },
-    { title: 'FigJam', type: 'quiz' as const, config: { question: '¿Qué es FigJam y para qué se usa principalmente?', options: ['Un plugin para exportar assets', 'Una pizarra online para lluvia de ideas y colaboración', 'Un modo de revisión de código', 'Una biblioteca de componentes de UI'], correct_index: 1, time_limit_seconds: 5 } },
+    { title: 'Components', type: 'quiz' as const, config: { question: '¿Qué función de Figma permite reutilizar elementos de diseño (como botones, iconos o tarjetas) en múltiples pantallas?', options: ['Auto Layout', 'Components (Componentes)', 'Frames', 'Variants'], correct_index: 1, time_limit_seconds: 20 } },
+    { title: 'Auto Layout', type: 'quiz' as const, config: { question: '¿Cómo se llama la funcionalidad de Figma que genera diseños responsivos y flexibles automáticamente?', options: ['Constraints', 'Grid Layout', 'Auto Layout', 'Smart Animate'], correct_index: 2, time_limit_seconds: 20 } },
+    { title: 'Team Project', type: 'quiz' as const, config: { question: '¿Cuál es el nombre del espacio en Figma donde los equipos comparten y gestionan archivos colaborativamente?', options: ['Workspace', 'Team Project', 'Design Hub', 'Canvas'], correct_index: 1, time_limit_seconds: 20 } },
+    { title: 'Prototype', type: 'quiz' as const, config: { question: '¿Qué herramienta de Figma permite crear animaciones y transiciones entre frames para simular una app?', options: ['FigJam', 'Dev Mode', 'Prototype', 'Inspect'], correct_index: 2, time_limit_seconds: 20 } },
+    { title: 'FigJam', type: 'quiz' as const, config: { question: '¿Qué es FigJam y para qué se usa principalmente?', options: ['Un plugin para exportar assets', 'Una pizarra online para lluvia de ideas y colaboración', 'Un modo de revisión de código', 'Una biblioteca de componentes de UI'], correct_index: 1, time_limit_seconds: 20 } },
 ];
 
 interface QuizTabProps {
@@ -383,7 +383,7 @@ export default function QuizTab({ sessionId, session, activities, currentActivit
                             <p className="text-sm font-black text-[var(--text-primary)] flex items-center gap-2">
                                 <Sparkles size={14} className="text-[#faff00]" /> Demo Figma
                             </p>
-                            <p className="text-xs text-[#a0a0b0] mt-0.5">5 preguntas · 5s cada una · nuevo grupo por carga</p>
+                            <p className="text-xs text-[#a0a0b0] mt-0.5">5 preguntas · 20s cada una · nuevo grupo por carga</p>
                             {demoError && <p className="text-xs text-red-400 mt-1">{demoError}</p>}
                         </div>
                         <button

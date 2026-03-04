@@ -273,3 +273,21 @@ h6,
   background: var(--accent-blue);
   color: white;
 }
+
+/* ── SCORE TOAST ANIMATION ───────────────────────────────── */
+@keyframes scorePopUp {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-12px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+}

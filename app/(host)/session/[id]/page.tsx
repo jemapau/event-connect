@@ -175,7 +175,7 @@ export default function HostSessionPage({
                             session={session}
                             activities={activities}
                             currentActivity={currentActivity}
-                            onRefresh={() => window.location.reload()}
+                            onRefresh={() => { /* realtime handles updates automatically */ }}
                         />
                     )}
                     {activeTab === 'networking' && (

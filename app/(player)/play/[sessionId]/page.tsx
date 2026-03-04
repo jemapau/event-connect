@@ -28,6 +28,8 @@ export default function PlayPage({
     const [timeLeft, setTimeLeft] = useState(0);
     const [participantId, setParticipantId] = useState<string | null>(null);
     const [activeSessions, setActiveSessions] = useState<{ id: string; title: string; pin: string }[]>([]);
+    const [scoreEarned, setScoreEarned] = useState(0);
+    const [showScoreToast, setShowScoreToast] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem(`ec_participant_${sessionId}`);
@@ -62,6 +64,8 @@ export default function PlayPage({
     useEffect(() => {
         setAnswered(false);
         setSelectedAnswer(null);
+        setScoreEarned(0);
+        setShowScoreToast(false);
         if (currentActivity?.config?.time_limit_seconds) {
             setTimeLeft(currentActivity.config.time_limit_seconds);
         }
@@ -73,7 +77,7 @@ export default function PlayPage({
         setSelectedAnswer(index);
 
         try {
-            await fetch('/api/respond', {
+            const res = await fetch('/api/respond', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -82,6 +86,12 @@ export default function PlayPage({
                     value: { selected_index: index }
                 })
             });
+            const json = await res.json();
+            if (json.score_earned > 0) {
+                setScoreEarned(json.score_earned);
+                setShowScoreToast(true);
+                setTimeout(() => setShowScoreToast(false), 2500);
+            }
         } catch (e) {
             console.error('Error enviando respuesta', e);
         }
@@ -181,16 +191,64 @@ export default function PlayPage({
                     </div>
                 )}
 
-                {/* ACTIVE WAITING STATE */}
-                {session.state === 'active' && !currentActivity && (
-                    <div className="flex flex-col items-center justify-center flex-1 text-center gap-6" aria-live="polite">
-                        <div className="neo-card-bright p-8 w-full" style={{ background: 'var(--accent-3)', borderColor: 'var(--neo-black)' }}>
-                            <div className="text-4xl mb-3" aria-hidden="true">👀</div>
-                            <h2 className="text-2xl font-black text-[#0f0f0f]">Prepárate</h2>
-                            <p className="text-[#0f0f0f] mt-2 font-bold">El host está preparando la siguiente actividad...</p>
+                {/* ACTIVE WAITING STATE — leaderboard if scores exist, else waiting */}
+                {session.state === 'active' && !currentActivity && (() => {
+                    const scored = [...participants].filter(p => p.score > 0).sort((a, b) => b.score - a.score);
+                    if (scored.length === 0) {
+                        return (
+                            <div className="flex flex-col items-center justify-center flex-1 text-center gap-6" aria-live="polite">
+                                <div className="neo-card-bright p-8 w-full" style={{ background: 'var(--accent-3)', borderColor: 'var(--neo-black)' }}>
+                                    <div className="text-4xl mb-3" aria-hidden="true">👀</div>
+                                    <h2 className="text-2xl font-black text-[#0f0f0f]">Prepárate</h2>
+                                    <p className="text-[#0f0f0f] mt-2 font-bold">El host está preparando la siguiente actividad...</p>
+                                </div>
+                            </div>
+                        );
+                    }
+                    return (
+                        <div className="flex flex-col gap-4 w-full" aria-live="polite">
+                            <div className="neo-card p-5 text-center" style={{ background: '#faff00', borderColor: '#0f0f0f' }}>
+                                <div className="text-3xl mb-1" aria-hidden="true">🏆</div>
+                                <h2 className="text-xl font-black text-[#0f0f0f]">Leaderboard</h2>
+                                <p className="text-[#0f0f0f] text-sm font-bold">Esperando la próxima pregunta...</p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                {scored.map((p, i) => {
+                                    const isMe = p.id === participantId;
+                                    return (
+                                        <div
+                                            key={p.id}
+                                            className="neo-card flex items-center gap-3 px-4 py-3"
+                                            style={{
+                                                background: isMe ? '#faff0020' : i === 0 ? '#faff0010' : 'var(--bg-card)',
+                                                borderColor: isMe ? '#faff00' : 'var(--neo-black)',
+                                                borderWidth: isMe ? 3 : undefined,
+                                            }}
+                                            aria-label={`Posición ${i + 1}: ${p.display_name}, ${p.score} puntos${isMe ? ' (tú)' : ''}`}
+                                        >
+                                            <div className="w-6 text-center flex-shrink-0">
+                                                {i === 0 ? <Trophy size={18} style={{ color: '#faff00' }} /> :
+                                                    i === 1 ? <Medal size={18} style={{ color: '#c0c0c0' }} /> :
+                                                        i === 2 ? <Medal size={18} style={{ color: '#cd7f32' }} /> :
+                                                            <span className="text-sm font-black text-[var(--text-secondary)]">{i + 1}</span>}
+                                            </div>
+                                            <span className="text-xl flex-shrink-0">{p.avatar_emoji}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-black text-sm text-[var(--text-primary)] truncate">
+                                                    {p.display_name}{isMe && <span className="ml-1 text-[#faff00]">← tú</span>}
+                                                </p>
+                                            </div>
+                                            <span className="font-black text-[var(--accent-3)]" aria-hidden="true">
+                                                {p.score} pts
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
+
 
                 {/* QUIZ STATE */}
                 {(session.state === 'question' || session.state === 'active') && currentActivity?.type === 'quiz' && (
@@ -204,9 +262,23 @@ export default function PlayPage({
                                     label="TIEMPO RESTANTE"
                                 />
                             </div>
-                            <div className="flex items-center self-end gap-1.5 px-3 py-1.5 rounded-full border-2 border-[var(--neo-black)] text-[var(--accent-3)] bg-[var(--bg-card)]" aria-label="Puntaje actual: 0 puntos">
+                            <div className="relative flex items-center self-end gap-1.5 px-3 py-1.5 rounded-full border-2 border-[var(--neo-black)] text-[var(--accent-3)] bg-[var(--bg-card)]" aria-label={`Puntaje actual: ${myParticipant?.score ?? 0} puntos`}>
                                 <Trophy size={14} aria-hidden="true" />
-                                <span className="font-black">0 pts</span>
+                                <span className="font-black">{myParticipant?.score ?? 0} pts</span>
+                                {/* +10 pts toast */}
+                                {showScoreToast && (
+                                    <span
+                                        className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-full text-xs font-black text-[#0f0f0f] whitespace-nowrap"
+                                        style={{
+                                            background: '#faff00',
+                                            border: '2px solid #0f0f0f',
+                                            animation: 'scorePopUp 2.5s ease forwards',
+                                        }}
+                                        aria-live="polite"
+                                    >
+                                        +{scoreEarned} pts ✅
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -221,8 +293,12 @@ export default function PlayPage({
                         {/* Options */}
                         {answered ? (
                             <div className="neo-card p-6 text-center" aria-live="polite">
-                                <div className="text-4xl mb-2" aria-hidden="true">✅</div>
-                                <p className="font-black text-[var(--text-primary)]">¡Respuesta enviada!</p>
+                                <div className="text-4xl mb-2" aria-hidden="true">
+                                    {scoreEarned > 0 ? '🎯' : '📨'}
+                                </div>
+                                <p className="font-black text-[var(--text-primary)]">
+                                    {scoreEarned > 0 ? '¡Correcto! +' + scoreEarned + ' pts' : '¡Respuesta enviada!'}
+                                </p>
                                 <p className="text-[var(--text-secondary)] text-sm mt-1">Esperando resultados...</p>
                             </div>
                         ) : (
