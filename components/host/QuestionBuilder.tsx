@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Check } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Check } from 'lucide-react';
 
-// Demo questions from question_demo.md
 const DEMO_QUESTIONS = [
     {
         title: '¿Qué función permite reutilizar elementos de diseño en múltiples pantallas y actualizarlos desde un solo lugar?',
@@ -11,7 +10,7 @@ const DEMO_QUESTIONS = [
             question: '¿Qué función de Figma permite reutilizar elementos de diseño (como botones, iconos o tarjetas) en múltiples pantallas?',
             options: ['Auto Layout', 'Components (Componentes)', 'Frames', 'Variants'],
             correct_index: 1,
-            time_limit_seconds: 30,
+            time_limit_seconds: 5,
         },
         type: 'quiz' as const,
     },
@@ -21,7 +20,7 @@ const DEMO_QUESTIONS = [
             question: '¿Cómo se llama la funcionalidad de Figma que genera diseños responsivos y flexibles automáticamente?',
             options: ['Constraints', 'Grid Layout', 'Auto Layout', 'Smart Animate'],
             correct_index: 2,
-            time_limit_seconds: 30,
+            time_limit_seconds: 5,
         },
         type: 'quiz' as const,
     },
@@ -31,7 +30,7 @@ const DEMO_QUESTIONS = [
             question: '¿Cuál es el nombre del espacio en Figma donde los equipos comparten y gestionan archivos colaborativamente?',
             options: ['Workspace', 'Team Project', 'Design Hub', 'Canvas'],
             correct_index: 1,
-            time_limit_seconds: 25,
+            time_limit_seconds: 5,
         },
         type: 'quiz' as const,
     },
@@ -41,7 +40,7 @@ const DEMO_QUESTIONS = [
             question: '¿Qué herramienta de Figma permite crear animaciones y transiciones entre frames para simular una app?',
             options: ['FigJam', 'Dev Mode', 'Prototype', 'Inspect'],
             correct_index: 2,
-            time_limit_seconds: 25,
+            time_limit_seconds: 5,
         },
         type: 'quiz' as const,
     },
@@ -56,7 +55,7 @@ const DEMO_QUESTIONS = [
                 'Una biblioteca de componentes de UI',
             ],
             correct_index: 1,
-            time_limit_seconds: 30,
+            time_limit_seconds: 5,
         },
         type: 'quiz' as const,
     },
@@ -64,6 +63,7 @@ const DEMO_QUESTIONS = [
 
 interface QuestionBuilderProps {
     sessionId: string;
+    existingDemoCount?: number; // how many 'Demo Figma*' groups already exist
     onQuestionsAdded?: () => void;
 }
 
@@ -83,11 +83,10 @@ const emptyDraft = (): DraftQuestion => ({
     time_limit_seconds: 30,
 });
 
-export default function QuestionBuilder({ sessionId, onQuestionsAdded }: QuestionBuilderProps) {
+export default function QuestionBuilder({ sessionId, existingDemoCount = 0, onQuestionsAdded }: QuestionBuilderProps) {
     const [drafts, setDrafts] = useState<DraftQuestion[]>([emptyDraft()]);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [loadingDemo, setLoadingDemo] = useState(false);
     const [error, setError] = useState('');
     const [expanded, setExpanded] = useState<string | null>(drafts[0].id);
     const [groupName, setGroupName] = useState('');
@@ -121,9 +120,18 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
     };
 
     const saveAll = async () => {
-        const valid = drafts.filter((d) => d.question.trim() && d.options.every((o) => o.trim()));
+        // A question is valid if it has text and at least 2 filled options
+        const valid = drafts
+            .filter((d) => d.question.trim() && d.options.filter((o) => o.trim()).length >= 2)
+            .map((d) => ({
+                ...d,
+                // Strip empty options and adjust correct_index if needed
+                options: d.options.filter((o) => o.trim()) as [string, string, string, string],
+                correct_index: Math.min(d.correct_index, d.options.filter((o) => o.trim()).length - 1),
+            }));
+
         if (valid.length === 0) {
-            setError('Completa al menos una pregunta con todas sus opciones');
+            setError('Completa al menos una pregunta con su texto y mínimo 2 opciones');
             return;
         }
         setSaving(true);
@@ -159,59 +167,23 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
         setSaving(false);
     };
 
-    const loadDemo = async () => {
-        setLoadingDemo(true);
-        setError('');
-        const res = await fetch('/api/activities', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                session_id: sessionId,
-                activities: DEMO_QUESTIONS.map((q, i) => ({
-                    ...q,
-                    sort_order: i,
-                    config: { ...q.config, group_name: 'Demo Figma' }
-                })),
-            }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            setError(data.error ?? 'Error al cargar demo');
-        } else {
-            onQuestionsAdded?.();
-        }
-        setLoadingDemo(false);
-    };
-
     const OPTION_COLORS = ['#ff6b6b', '#54a0ff', '#5ab651', '#f9ca24'];
     const OPTION_LABELS = ['A', 'B', 'C', 'D'];
+    const filledCount = drafts.filter(d => d.question.trim()).length;
 
     return (
-        <div className="flex flex-col gap-5 max-w-2xl">
+        <div className="flex flex-col gap-5 w-full">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-black text-[var(--text-primary)]">Crear Preguntas</h2>
-                <div className="flex gap-3">
-                    <button
-                        id="load-demo-btn"
-                        onClick={loadDemo}
-                        disabled={loadingDemo}
-                        className="neo-btn px-4 py-2.5 text-sm font-black text-[var(--text-primary)] flex items-center gap-2"
-                        style={{ background: 'var(--bg-card)' }}
-                        title="Carga las 5 preguntas de Figma del demo"
-                    >
-                        <Sparkles size={15} />
-                        {loadingDemo ? 'Cargando...' : 'Demo Figma'}
-                    </button>
-                    <button
-                        id="add-question-btn"
-                        onClick={addQuestion}
-                        className="neo-btn px-4 py-2.5 text-sm font-black text-[#0f0f0f] flex items-center gap-2"
-                        style={{ background: '#faff00' }}
-                    >
-                        <Plus size={15} /> Nueva pregunta
-                    </button>
-                </div>
+                <button
+                    id="add-question-btn"
+                    onClick={addQuestion}
+                    className="neo-btn px-4 py-2.5 text-sm font-black text-[#0f0f0f] flex items-center gap-2"
+                    style={{ background: '#faff00' }}
+                >
+                    <Plus size={15} /> Nueva pregunta
+                </button>
             </div>
 
             {/* Group Name */}
@@ -345,9 +317,9 @@ export default function QuestionBuilder({ sessionId, onQuestionsAdded }: Questio
                 ) : saving ? (
                     'Guardando...'
                 ) : (
-                    <><Plus size={18} /> Guardar {drafts.length} pregunta{drafts.length !== 1 ? 's' : ''}</>
+                    <><Plus size={18} /> Guardar {filledCount} pregunta{filledCount !== 1 ? 's' : ''}</>
                 )}
             </button>
-        </div>
+        </div >
     );
 }

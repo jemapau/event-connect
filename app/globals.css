@@ -170,8 +170,8 @@ h6,
 
 /* ── INPUTS ──────────────────────────────────────────────── */
 .neo-input {
-  border: 3px solid var(--neo-black);
-  box-shadow: 3px 3px 0px var(--neo-black);
+  border: 2px solid var(--border);
+  box-shadow: none;
   border-radius: 8px;
   background: var(--bg-card);
   color: var(--text-primary);
@@ -179,17 +179,24 @@ h6,
   padding: 12px 16px;
   width: 100%;
   font-size: 1rem;
-  transition: box-shadow 0.1s ease, background 0.2s;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.2s;
 }
 
 .neo-input:focus {
   outline: none;
-  box-shadow: 5px 5px 0px var(--accent-blue);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 25%, transparent);
+}
+
+/* When the input has a real value (not just placeholder), strengthen the border */
+.neo-input:not(:placeholder-shown) {
+  border-color: var(--neo-black);
 }
 
 .neo-input::placeholder {
   color: var(--text-secondary);
   font-weight: 400;
+  opacity: 0.5;
 }
 
 /* ── HERO GRADIENT TEXT ──────────────────────────────────── */

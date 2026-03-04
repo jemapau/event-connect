@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useSessionChannel } from '@/lib/realtime/hooks';
 
 const EMOJIS = ['😊', '🚀', '🎨', '💡', '🔥', '⚡', '🌟', '🦊', '🐙', '🎯', '🦄', '🐉'];
 
@@ -37,19 +36,8 @@ function JoinPageContent() {
     const [profession, setProfession] = useState<Profession>('diseno_ux');
     const [professionCustom, setProfessionCustom] = useState('');
     const [interests, setInterests] = useState<string[]>([]);
-    const [sessionId, setSessionId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const session = useSessionChannel(sessionId);
-
-    // Auto-redirect if the session is already active or question
-    useEffect(() => {
-        if (step === 4 && sessionId && session && session.state !== 'lobby') {
-            router.push(`/play/${sessionId}`);
-        }
-    }, [step, sessionId, session, router]);
-
     const validatePin = async () => {
         const clean = pin.replace(/\s/g, '');
         if (clean.length !== 6) { setError('El PIN debe tener 6 dígitos'); return; }
@@ -89,18 +77,14 @@ function JoinPageContent() {
                 return;
             }
 
-            setSessionId(data.session.id);
             localStorage.setItem(`ec_participant_${data.session.id}`, data.participant.id);
-            setStep(4);
+            // Redirect directly to the lobby — no intermediate step
+            router.push(`/play/${data.session.id}`);
         } catch {
             setError('Error de conexión');
         } finally {
             setLoading(false);
         }
-    };
-
-    const enterLobby = () => {
-        router.push(`/play/${sessionId}`);
     };
 
     return (
@@ -258,8 +242,8 @@ function JoinPageContent() {
                                                 else setInterests(ints => [...ints, tag.label]);
                                             }}
                                             className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all w-full text-left font-bold ${isSelected
-                                                    ? 'border-black bg-[#faff00] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                                    : 'border-[#ddd] bg-[#f5f5f5] hover:border-[#aaa]'
+                                                ? 'border-black bg-[#faff00] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                                : 'border-[#ddd] bg-[#f5f5f5] hover:border-[#aaa]'
                                                 }`}
                                         >
                                             <span className="text-xl">{tag.emoji}</span>
@@ -298,22 +282,7 @@ function JoinPageContent() {
                         </div>
                     )}
 
-                    {/* Step 4: Ready! */}
-                    {step === 4 && (
-                        <div className="neo-card p-8 text-center" style={{ background: '#fff' }}>
-                            <div className="text-6xl mb-4">{emoji}</div>
-                            <h2 className="text-2xl font-black text-[#0f0f0f] mb-2">¡Listo, {name}!</h2>
-                            <p className="text-[#555] mb-6">Ya estás en la sesión. Entrando automáticamente o haz clic en el botón.</p>
-                            <button
-                                id="enter-lobby-btn"
-                                onClick={enterLobby}
-                                className="neo-btn w-full py-4 font-black text-[#0f0f0f]"
-                                style={{ background: '#faff00' }}
-                            >
-                                🎉 Entrar al Lobby
-                            </button>
-                        </div>
-                    )}
+
                 </div>
             </div>
         </div>

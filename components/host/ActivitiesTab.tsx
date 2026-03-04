@@ -13,6 +13,7 @@ import type { Session } from '@/lib/types';
 interface ActivitiesTabProps {
     sessionId: string;
     session: Session;
+    panelWidth?: number;
     onSelectActivity: (activityType: 'quiz' | 'poll' | 'wordcloud' | 'networking' | 'open_question' | 'icebreaker') => void;
 }
 
@@ -73,7 +74,16 @@ const ACTIVITY_TYPES = [
     }
 ] as const;
 
-export default function ActivitiesTab({ sessionId, session, onSelectActivity }: ActivitiesTabProps) {
+export default function ActivitiesTab({ sessionId, session, panelWidth = 224, onSelectActivity }: ActivitiesTabProps) {
+    // Estimate available width: viewport minus QR panel (256px) minus participant panel
+    // Use a simple threshold: if total panels are wide, reduce columns
+    const cols = panelWidth > 300 ? 1 : panelWidth > 220 ? 2 : 3;
+    const gridClass = cols === 1
+        ? 'grid grid-cols-1 gap-5'
+        : cols === 2
+            ? 'grid grid-cols-1 md:grid-cols-2 gap-5'
+            : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5';
+
     return (
         <div className="flex flex-col gap-6 max-w-5xl">
             <div>
@@ -81,7 +91,7 @@ export default function ActivitiesTab({ sessionId, session, onSelectActivity }: 
                 <p className="text-[#a0a0b0] mt-1">Selecciona el tipo de dinámica que deseas iniciar o configurar.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className={gridClass}>
                 {ACTIVITY_TYPES.map((act) => (
                     <button
                         key={act.id}

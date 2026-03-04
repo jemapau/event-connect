@@ -20,7 +20,7 @@ const ActivitySchema = z.object({
         options: z.array(z.string()).optional(),
         correct_index: z.number().optional(),
         time_limit_seconds: z.number().default(30),
-    }),
+    }).passthrough(), // preserve extra fields like group_name
     sort_order: z.number().optional(),
 });
 
@@ -109,6 +109,22 @@ export async function DELETE(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
     const supabase = createServiceClient();
     const { error } = await supabase.from('activities').delete().eq('id', id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+}
+
+// PATCH /api/activities — reset a list of activities back to 'pending' (relaunch group)
+export async function PATCH(request: NextRequest) {
+    const body = await request.json();
+    const ids: string[] = body.ids;
+    if (!Array.isArray(ids) || ids.length === 0) {
+        return NextResponse.json({ error: 'ids array required' }, { status: 400 });
+    }
+    const supabase = createServiceClient();
+    const { error } = await supabase
+        .from('activities')
+        .update({ state: 'pending' })
+        .in('id', ids);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
 }

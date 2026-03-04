@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState, useRef } from 'react';
+import { use, useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Play, Pause, SkipForward, Shuffle, Users, Wifi } from 'lucide-react';
@@ -25,10 +25,50 @@ export default function HostSessionPage({
     const { id: sessionId } = use(params);
     const [activeTab, setActiveTab] = useState<Tab>('actividades');
     const [qrDataUrl, setQrDataUrl] = useState('');
+    const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+    const [panelWidth, setPanelWidth] = useState(224); // default 56 * 4 = 224px (w-56)
+    const isDragging = useRef(false);
+    const dragStartX = useRef(0);
+    const dragStartWidth = useRef(0);
 
     const session = useSessionChannel(sessionId);
-    const participants = useParticipants(sessionId);
+    const rawParticipants = useParticipants(sessionId);
+    const participants = rawParticipants.filter(p => !deletedIds.has(p.id));
     const { activities, currentActivity } = useActivityUpdates(sessionId);
+
+    const handleDeleteParticipant = (id: string) => {
+        setDeletedIds(prev => new Set(prev).add(id));
+    };
+
+    const onDragStart = useCallback((e: React.MouseEvent) => {
+        isDragging.current = true;
+        dragStartX.current = e.clientX;
+        dragStartWidth.current = panelWidth;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, [panelWidth]);
+
+    useEffect(() => {
+        const onMove = (e: MouseEvent) => {
+            if (!isDragging.current) return;
+            // Dragging left increases panel width (handle is on the left of the panel)
+            const delta = dragStartX.current - e.clientX;
+            const newWidth = Math.min(400, Math.max(160, dragStartWidth.current + delta));
+            setPanelWidth(newWidth);
+        };
+        const onUp = () => {
+            isDragging.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        return () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+    }, []);
+
     const lastSessionStateRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -90,7 +130,7 @@ export default function HostSessionPage({
             </header>
 
             {/* Tabs */}
-            <div className="flex border-b border-[#2a2a4a] px-6">
+            <div className="flex border-b border-[#2a2a4a] px-6 mx-6">
                 {tabs.map((tab) => (
                     <button
                         key={tab.key}
@@ -111,19 +151,18 @@ export default function HostSessionPage({
             <div className="flex-1 flex gap-0 overflow-hidden">
                 {/* Left panel — QR + Stats (Only visible on Actividades tab) */}
                 {activeTab === 'actividades' && (
-                    <aside className="w-72 border-r border-[#2a2a4a] p-5 flex flex-col gap-5 overflow-y-auto">
+                    <aside className="w-64 border-r border-[#2a2a4a] p-5 flex flex-col gap-5 overflow-y-auto">
                         <QRDisplay pin={session.pin} qrDataUrl={qrDataUrl} />
-                        <LiveStats participants={participants} />
-                        <ParticipantList participants={participants} />
                     </aside>
                 )}
 
-                {/* Right panel — Active tab */}
+                {/* Center panel — Active tab */}
                 <main className="flex-1 p-6 overflow-y-auto">
                     {activeTab === 'actividades' && (
                         <ActivitiesTab
                             sessionId={sessionId}
                             session={session}
+                            panelWidth={panelWidth}
                             onSelectActivity={(type) => {
                                 if (type === 'networking') setActiveTab('networking');
                                 else setActiveTab('quiz');
@@ -156,6 +195,30 @@ export default function HostSessionPage({
                         <ConfigPanel session={session} />
                     )}
                 </main>
+
+                {/* Right column — Participants list (always visible) */}
+                {/* Drag handle */}
+                <div
+                    onMouseDown={onDragStart}
+                    className="w-1.5 flex-shrink-0 cursor-col-resize group relative"
+                    style={{ background: '#2a2a4a' }}
+                    title="Arrastra para redimensionar"
+                >
+                    <div className="absolute inset-0 group-hover:bg-[#faff0040] transition-colors rounded" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-0.5 h-4 rounded-full bg-[#faff00]" />
+                    </div>
+                </div>
+                <aside
+                    className="border-l border-[#2a2a4a] p-4 flex flex-col overflow-hidden flex-shrink-0 gap-4"
+                    style={{ width: panelWidth }}
+                >
+                    <LiveStats participants={participants} />
+                    <ParticipantList
+                        participants={participants}
+                        onDelete={handleDeleteParticipant}
+                    />
+                </aside>
             </div>
         </div>
     );

@@ -137,22 +137,45 @@ export default function PlayPage({
             <main className="flex-1 flex flex-col px-4 py-6 max-w-sm mx-auto w-full">
                 {/* LOBBY STATE */}
                 {session.state === 'lobby' && (
-                    <div className="flex flex-col items-center justify-center flex-1 text-center gap-6" aria-live="polite">
-                        <div className="neo-card-bright p-8 w-full">
-                            <div className="text-4xl mb-3" aria-hidden="true">⏳</div>
-                            <h2 className="text-2xl font-black text-[#0f0f0f]">Sala de Espera</h2>
-                            <p className="text-[#333] mt-2">El host iniciará en breve...</p>
+                    <div className="flex flex-col flex-1 gap-4 w-full" aria-live="polite">
+                        {/* Header card */}
+                        <div className="neo-card-bright p-6 w-full text-center">
+                            <div className="text-3xl mb-2" aria-hidden="true">🎉</div>
+                            <h2 className="text-xl font-black text-[#0f0f0f]">¡Ya estás en el evento!</h2>
+                            <p className="text-[#444] text-sm mt-1">Espera a que el host inicie una actividad...</p>
                         </div>
-                        <div className="neo-card p-5 w-full text-left">
-                            <p className="text-sm font-black text-[#a0a0b0] mb-3">
-                                Participantes conectados ({participants.length})
-                            </p>
-                            <div className="flex flex-wrap gap-2">
+
+                        {/* Participants grid */}
+                        <div className="neo-card p-4 w-full flex flex-col gap-3 flex-1">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-black text-[#a0a0b0] uppercase tracking-wide">
+                                    👥 Conectados ahora
+                                </p>
+                                <span
+                                    className="text-xs font-black px-2 py-0.5 rounded-full"
+                                    style={{ background: 'var(--accent-3)', color: '#0f0f0f' }}
+                                >
+                                    {participants.length}
+                                </span>
+                            </div>
+
+                            <div className="flex flex-col gap-2 overflow-y-auto max-h-96">
                                 {participants.map((p) => (
-                                    <span key={p.id} className="flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold border border-[#2a2a4a] text-[#0f0f0f] bg-[#f5f5f5]">
-                                        {p.avatar_emoji} {p.display_name}
-                                    </span>
+                                    <div
+                                        key={p.id}
+                                        className="flex items-center gap-3 p-2.5 rounded-xl"
+                                        style={{ background: '#1e1e3a' }}
+                                    >
+                                        <span className="text-2xl flex-shrink-0">{p.avatar_emoji}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-black text-white truncate">{p.display_name}</p>
+                                            <p className="text-xs text-[#a0a0b0]">{PROFESSION_LABELS[p.profession]}</p>
+                                        </div>
+                                    </div>
                                 ))}
+                                {participants.length === 0 && (
+                                    <p className="text-xs text-[#a0a0b0] text-center py-4">Aún no hay más asistentes...</p>
+                                )}
                             </div>
                         </div>
                     </div>

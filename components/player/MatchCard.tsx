@@ -29,7 +29,7 @@ export default function MatchCard({
     // Find current user's participant
     const currentUserId =
         typeof window !== 'undefined'
-            ? sessionStorage.getItem(`participant_${sessionId}`)
+            ? localStorage.getItem(`ec_participant_${sessionId}`)
             : null;
     const myParticipant = participants.find((p) => p.id === currentUserId);
 
