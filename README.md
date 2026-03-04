@@ -4,6 +4,8 @@
 
 EventConnect permite a los hosts crear sesiones interactivas donde los asistentes participan en quiz en vivo, matchmaking por intereses y votaciones — sin necesidad de cuenta ni descarga. Solo un PIN y ya están dentro.
 
+🔗 **Demo en vivo:** [event-connect-iota.vercel.app](https://event-connect-iota.vercel.app/)
+
 ![Captura de pantalla de EventConnect](./public/screenshot-home.png)
 
 ---
